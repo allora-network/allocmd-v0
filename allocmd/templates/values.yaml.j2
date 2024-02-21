@@ -4,36 +4,62 @@
 statefulsets:
   - name: {{ worker_name }}-workers
     replicas: 1
+
     persistence:
       size: 1Gi
       storageClassName: gp2
       volumeMountPath: /data
+
     initContainers:
-      - name: {{ worker_name }}-keys-generator
+      - name: {{ worker_name }}-p2p-key-generator
         image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/upshot-compute-node:dev-latest
         env:
-          - name: APP_HOME
-            value: "/data"
+          - name: KEYS_PATH
+            value: "/data/keys"
         workingDir: /data
         command:
           - /bin/sh
           - -c
           - |
-            KEYS_PATH="${APP_HOME}/keys"
-
             if [ -d "$KEYS_PATH" ]; then
-              echo "Keys exist"
+              echo "node identity exist for {{ worker_name }} worker"
             else
-              echo "Generating New Node Identity"
-              mkdir -p ${APP_HOME}/keys
+              echo "generating new node identity for {{ worker_name }} worker"
+              mkdir -p ${KEYS_PATH}
               cd $KEYS_PATH
-              upshot-keys
+              allora-keys
             fi
+        securityContext:
+          runAsUser: 1001
         volumeMounts:
           - name: {{ worker_name }}-workers-data
             mountPath: /data
+
+      - name: {{ worker_name }}-allora-key-generator
+        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/allora-chain:dev-latest
+        env:
+          - name: ACCOUNT_NAME
+            value: "{{ worker_name }}"
+          - name: KEYRING_BACKEND
+            value: "test" # persist in memory and serve from any secure external-secret
+        workingDir: /data
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -ex
+
+            if allorad keys --keyring-backend $KEYRING_BACKEND show $ACCOUNT_NAME >/dev/null 2>&1 ; then
+              echo "$ACCOUNT_NAME already imported to allora chain directory"
+            else
+              echo "importing $ACCOUNT_NAME to allora chain directory"
+              allorad keys import-hex --home=/data/.allorad --keyring-backend $KEYRING_BACKEND $ACCOUNT_NAME {{ hex_coded_pk }}
+            fi
         securityContext:
           runAsUser: 1001
+        volumeMounts:
+          - name: {{ worker_name }}-workers-data
+            mountPath: /data
 
     containers:
       - name: {{ worker_name }}-worker
@@ -43,28 +69,29 @@ statefulsets:
         env:
           - name: APP_HOME
             value: "/data"
-          - name: UPSHOT_API_TOKEN
+          - name: SAMPLE_ENV_VAR
             valueFrom:
               secretKeyRef:
-                name: upshot-api-token
-                key: UPSHOT_API_TOKEN
+                name: sample_variable
+                key: SAMPLE_ENV_VAR
         workingDir: /data
         command:
-          - upshot-node
+          - allora-node
           - --role=worker
-          - --peer-db=$(APP_HOME)/peer-database
-          - --function-db=$(APP_HOME)/function-database
+          - --peer-db=$APP_HOME/peer-database
+          - --function-db=$APP_HOME/function-database
           - --runtime-path=/app/runtime
           - --runtime-cli=bls-runtime
-          - --workspace=$(APP_HOME)/workspace
-          - --private-key=$(APP_HOME)/keys/priv.bin
+          - --workspace=$APP_HOME/workspace
+          - --private-key=$APP_HOME/keys/priv.bin
           - --log-level=debug
           - --port=9011
           - --boot-nodes={{ boot_nodes }}
           - --allora-node-rpc-address={{ chain_rpc_address }}
+          - --allora-chain-home-dir=/data/.allorad
           - --allora-chain-key-name={{ worker_name }}
-          - --allora-chain-restore-mnemonic={{ mnemonic }}
           - --allora-chain-topic-id={{ chain_topic_id }}
+          - --topic={{ chain_topic_id }}
         ports:
           - name: {{ worker_name }}-p2p
             port: 9011
@@ -94,13 +121,54 @@ global:
     runAsGroup: 1001
     fsGroupChangePolicy: "Always"
 
-additionalYamlManifests: |
-  apiVersion: v1
-  kind: Secret
-  metadata:
-    name: upshot-api-token
-  type: Opaque
-  data:
-    UPSHOT_API_TOKEN: "VVAtYTYxMjg5MDFjMTljNDhhN2E3OWIzZDYw"
+additionalYamlManifests: 
+  - kind: Secret
+    apiVersion: v1
+    metadata:
+      name: sample_variable
+    type: Opaque
+    data:
+      SAMPLE_ENV_VAR: "VVAtYTYxMjg5MDFjMTljNDhhN2E3OWIzZDYw" # base64
+  
+  - kind: ServiceAccount
+    apiVersion: v1
+    metadata:
+      name: {{worker_name}}-service-account
+      annotations:
+        eks.amazonaws.com/role-arn: "{{ role_arn }}"
+  
+  - kind: ExternalSecret
+    apiVersion: external-secrets.io/v1beta1
+    metadata:
+      name: {{ worker_name }}-allora-account-external-secret
+    spec:
+      refreshInterval: 60s
+      secretStoreRef:
+        name: {{ worker_name }}-allora-account-secret-store
+        kind: SecretStore
+      target:
+        name: {{ worker_name }}-allora-account
+        deletionPolicy: "Delete"
+      dataFrom:
+        - find:
+            conversionStrategy: Default
+            decodingStrategy: None
+            name:
+              regexp: {{ worker_name }}-allora-account
+
+  - kind: SecretStore
+    apiVersion: external-secrets.io/v1beta1
+    metadata:
+      name: {{ worker_name }}-allora-account-secret-store
+    spec:
+      provider:
+        aws:
+          service: SecretsManager
+          region: us-east-1
+          auth:
+            jwt:
+              serviceAccountRef:
+                name: {{worker_name}}-service-account
+
 
 

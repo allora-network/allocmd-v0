@@ -54,9 +54,21 @@ def create_worker_account(worker_name):
             lines = file.readlines()
 
         mnemonic = lines[-1].strip()
+
+        hex_pk_result = subprocess.run(f"allorad keys export {worker_name} --unarmored-hex --unsafe", 
+                                shell=True, 
+                                capture_output=True, 
+                                text=True,
+                                cwd=allora_chain_dir,
+                                env=env, 
+                                stderr=subprocess.STDOUT)
+        
+        hex_coded_pk = hex_pk_result.stdout.strip()
+        with open(key_path, "w") as file:
+            file.write(f"\nHEX-CODED PRIVATE KEY: \n{hex_coded_pk}")
         
         print(colored(f"keys created for this worker. please check {worker_name}.keys for your address and mnemonic", "green"))
-        return mnemonic
+        return mnemonic, hex_coded_pk
     else:
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
         return ''

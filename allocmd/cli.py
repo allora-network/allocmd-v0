@@ -160,16 +160,21 @@ def deploy():
             return
 
         worker_name = config['initialize']['name']
-        mnemonic = config['deploy']['mnemonic'] if config['deploy']['mnemonic'] else create_worker_account(worker_name)
+        accound_details = None
+        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk']:
+            accound_details = create_worker_account(worker_name)
 
+        mnemonic = accound_details[0]
+        hex_coded_pk = accound_details[1]
         worker_image_uri = config['deploy']['image_uri']
         worker_image_tag = config['deploy']['image_tag']
         boot_nodes = config['deploy']['boot_nodes']
         chain_rpc_address = config['deploy']['chain_rpc_address']
         chain_topic_id = config['deploy']['chain_topic_id']
 
-        if not config['deploy']['mnemonic']:
+        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk']:
             config['deploy']['mnemonic'] = mnemonic
+            config['deploy']['hex_coded_pk'] = hex_coded_pk
             with open(config_path, 'w') as file:
                 yaml.safe_dump(config, file)
 
@@ -177,7 +182,7 @@ def deploy():
             {
                 "template_name": "values.yaml.j2",
                 "file_name": "values.yaml",
-                "context": {"worker_image_uri": worker_image_uri, "worker_image_tag": worker_image_tag, "worker_name": worker_name, "boot_nodes": boot_nodes, "chain_rpc_address": chain_rpc_address, "chain_topic_id": chain_topic_id, "mnemonic": mnemonic}
+                "context": {"worker_image_uri": worker_image_uri, "worker_image_tag": worker_image_tag, "worker_name": worker_name, "boot_nodes": boot_nodes, "chain_rpc_address": chain_rpc_address, "chain_topic_id": chain_topic_id, "mnemonic": mnemonic, "hex_coded_pk": hex_coded_pk}
             }
         ]
 
