@@ -160,22 +160,23 @@ def deploy():
             return
 
         worker_name = config['initialize']['name']
-        accound_details = None
+        account_details = None
         if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk'] or not config['deploy']['address']:
-            accound_details = create_worker_account(worker_name)
+            account_details = create_worker_account(worker_name)
 
-        mnemonic = accound_details[0] if accound_details else config['deploy']['mnemonic']
-        hex_coded_pk = accound_details[1] if accound_details else config['deploy']['hex_coded_pk']
-        address = accound_details[2] if accound_details else config['deploy']['address']
+        mnemonic = account_details[0] if account_details else config['deploy']['mnemonic']
+        hex_coded_pk = account_details[1] if account_details else config['deploy']['hex_coded_pk']
+        address = account_details[2] if account_details else config['deploy']['address']
         worker_image_uri = config['deploy']['image_uri']
         worker_image_tag = config['deploy']['image_tag']
         boot_nodes = config['deploy']['boot_nodes']
         chain_rpc_address = config['deploy']['chain_rpc_address']
         chain_topic_id = config['deploy']['chain_topic_id']
 
-        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk']:
+        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk'] or not config['deploy']['address']:
             config['deploy']['mnemonic'] = mnemonic
             config['deploy']['hex_coded_pk'] = hex_coded_pk
+            config['deploy']['address'] = address
             with open(config_path, 'w') as file:
                 yaml.safe_dump(config, file)
 
@@ -191,8 +192,7 @@ def deploy():
                     "chain_rpc_address": chain_rpc_address, 
                     "chain_topic_id": chain_topic_id, 
                     "mnemonic": mnemonic, 
-                    "hex_coded_pk": hex_coded_pk,
-                    "address": address
+                    "hex_coded_pk": hex_coded_pk
                 }
             }
         ]

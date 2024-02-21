@@ -53,7 +53,7 @@ def create_worker_account(worker_name):
 
         with open(key_path, 'r') as file:
             content = file.read()
-            lines = file.readlines()
+            lines = content.splitlines()
 
         address = re.search(r'address: (\w+)', content).group(1)
         mnemonic = lines[-1].strip()
