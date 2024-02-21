@@ -164,8 +164,8 @@ def deploy():
         if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk']:
             accound_details = create_worker_account(worker_name)
 
-        mnemonic = accound_details[0]
-        hex_coded_pk = accound_details[1]
+        mnemonic = accound_details[0] if accound_details else config['deploy']['mnemonic']
+        hex_coded_pk = accound_details[1] if accound_details else config['deploy']['hex_coded_pk']
         worker_image_uri = config['deploy']['image_uri']
         worker_image_tag = config['deploy']['image_tag']
         boot_nodes = config['deploy']['boot_nodes']

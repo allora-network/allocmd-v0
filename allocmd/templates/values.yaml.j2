@@ -12,7 +12,7 @@ statefulsets:
 
     initContainers:
       - name: {{ worker_name }}-p2p-key-generator
-        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/upshot-compute-node:dev-latest
+        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/allora-inference-base:dev-latest
         env:
           - name: KEYS_PATH
             value: "/data/keys"
@@ -72,18 +72,18 @@ statefulsets:
           - name: SAMPLE_ENV_VAR
             valueFrom:
               secretKeyRef:
-                name: sample_variable
+                name: sample-variable
                 key: SAMPLE_ENV_VAR
         workingDir: /data
         command:
           - allora-node
           - --role=worker
-          - --peer-db=$APP_HOME/peer-database
-          - --function-db=$APP_HOME/function-database
+          - --peer-db=$(APP_HOME)/peer-database
+          - --function-db=$(APP_HOME)/function-database
           - --runtime-path=/app/runtime
           - --runtime-cli=bls-runtime
-          - --workspace=$APP_HOME/workspace
-          - --private-key=$APP_HOME/keys/priv.bin
+          - --workspace=/tmp/node
+          - --private-key=$(APP_HOME)/keys/priv.bin
           - --log-level=debug
           - --port=9011
           - --boot-nodes={{ boot_nodes }}
@@ -121,11 +121,11 @@ global:
     runAsGroup: 1001
     fsGroupChangePolicy: "Always"
 
-additionalYamlManifests: 
-  - kind: Secret
+additionalYamlManifests: |
+    kind: Secret
     apiVersion: v1
     metadata:
-      name: sample_variable
+      name: sample-variable
     type: Opaque
     data:
       SAMPLE_ENV_VAR: "c2FtcGxlIGVudmlyb25tZW50IHZhcmlhYmxl" # base64

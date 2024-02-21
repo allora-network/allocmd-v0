@@ -55,15 +55,17 @@ def create_worker_account(worker_name):
 
         mnemonic = lines[-1].strip()
 
-        hex_pk_result = subprocess.run(f"allorad keys export {worker_name} --unarmored-hex --unsafe", 
-                                shell=True, 
-                                capture_output=True, 
-                                text=True,
-                                cwd=allora_chain_dir,
-                                env=env)
+        process = subprocess.Popen(['allorad', 'keys', 'export', worker_name, '--unarmored-hex', '--unsafe'], 
+                                   stdin=subprocess.PIPE, 
+                                   stdout=subprocess.PIPE, 
+                                   stderr=subprocess.PIPE, 
+                                   text=True, 
+                                   cwd=allora_chain_dir, 
+                                   env=env)
+        hex_pk_result, errors = process.communicate(input='y\n')
         
-        hex_coded_pk = hex_pk_result.stdout.strip()
-        with open(key_path, "w") as file:
+        hex_coded_pk = hex_pk_result.strip()
+        with open(key_path, "a") as file:
             file.write(f"\nHEX-CODED PRIVATE KEY: \n{hex_coded_pk}")
         
         print(colored(f"keys created for this worker. please check {worker_name}.keys for your address and mnemonic", "green"))
