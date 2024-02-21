@@ -1,0 +1,106 @@
+# Begin your modification here if necessary
+# check https://github.com/upshot-tech/helm-charts/blob/main/charts/universal-helm/templates/statefulsets.yaml for the charttemplate that uses this helm value
+
+statefulsets:
+  - name: {{ worker_name }}-workers
+    replicas: 1
+    persistence:
+      size: 1Gi
+      storageClassName: gp2
+      volumeMountPath: /data
+    initContainers:
+      - name: {{ worker_name }}-keys-generator
+        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/upshot-compute-node:dev-latest
+        env:
+          - name: APP_HOME
+            value: "/data"
+        workingDir: /data
+        command:
+          - /bin/sh
+          - -c
+          - |
+            KEYS_PATH="${APP_HOME}/keys"
+
+            if [ -d "$KEYS_PATH" ]; then
+              echo "Keys exist"
+            else
+              echo "Generating New Node Identity"
+              mkdir -p ${APP_HOME}/keys
+              cd $KEYS_PATH
+              upshot-keys
+            fi
+        volumeMounts:
+          - name: {{ worker_name }}-workers-data
+            mountPath: /data
+        securityContext:
+          runAsUser: 1001
+
+    containers:
+      - name: {{ worker_name }}-worker
+        image:
+          repository: {{ worker_image_uri }}
+          tag: {{ worker_image_tag }}
+        env:
+          - name: APP_HOME
+            value: "/data"
+          - name: UPSHOT_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: upshot-api-token
+                key: UPSHOT_API_TOKEN
+        workingDir: /data
+        command:
+          - upshot-node
+          - --role=worker
+          - --peer-db=$(APP_HOME)/peer-database
+          - --function-db=$(APP_HOME)/function-database
+          - --runtime-path=/app/runtime
+          - --runtime-cli=bls-runtime
+          - --workspace=$(APP_HOME)/workspace
+          - --private-key=$(APP_HOME)/keys/priv.bin
+          - --log-level=debug
+          - --port=9011
+          - --boot-nodes={{ boot_nodes }}
+          - --allora-node-rpc-address={{ chain_rpc_address }}
+          - --allora-chain-key-name={{ worker_name }}
+          - --allora-chain-restore-mnemonic={{ mnemonic }}
+          - --allora-chain-topic-id={{ chain_topic_id }}
+        ports:
+          - name: {{ worker_name }}-p2p
+            port: 9011
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 256m
+            memory: 512Mi
+        startupProbe:
+          tcpSocket:
+            port: 9011
+          periodSeconds: 10
+          failureThreshold: 60
+        livenessProbe:
+          tcpSocket:
+            port: 9011
+global:
+  fullnameOverride: {{ worker_name }}
+  serviceAccount:
+    create: true
+    name: node
+  securityContext:
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroupChangePolicy: "Always"
+
+additionalYamlManifests: |
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: upshot-api-token
+  type: Opaque
+  data:
+    UPSHOT_API_TOKEN: "VVAtYTYxMjg5MDFjMTljNDhhN2E3OWIzZDYw"
+
+

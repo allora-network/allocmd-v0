@@ -1,0 +1,6 @@
+allora-wkr
+__pycache__
+allocmd.egg-info
+build
+dist
+.DS_Store

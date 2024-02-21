@@ -1,0 +1,18 @@
+import requests
+import sys
+import json
+
+# modify the main function as necessary
+def main(argument):
+    url = f"https://upshot.com/inference/{argument}"
+    response = requests.get(url)
+    print(response)
+
+if __name__ == "__main__":
+    try:
+        inference_argument = sys.argv[1]
+        # main(inference_argument) # uncomment this after modification
+        print('{"value":"1000.0"}') # remove this after modiciation
+    except Exception as e:
+        response = json.dumps({"error": {str(e)}})
+        print(response)

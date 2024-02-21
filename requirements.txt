@@ -1,0 +1,6 @@
+click>=7.0
+docker>=4.0
+pyyaml>=5.1
+jinja2>=2.10
+PyYAML==6.0
+termcolor==1.1.0
