@@ -12,7 +12,7 @@ statefulsets:
 
     initContainers:
       - name: {{ worker_name }}-p2p-key-generator
-        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/allora-inference-base:dev-latest
+        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/upshot-b7s-index-provider:dev-latest
         env:
           - name: KEYS_PATH
             value: "/data/keys"
@@ -27,7 +27,7 @@ statefulsets:
               echo "generating new node identity for {{ worker_name }} worker"
               mkdir -p ${KEYS_PATH}
               cd $KEYS_PATH
-              allora-keys
+              upshot-keys
             fi
         securityContext:
           runAsUser: 1001
@@ -76,7 +76,7 @@ statefulsets:
                 key: SAMPLE_ENV_VAR
         workingDir: /data
         command:
-          - allora-node
+          - upshot-node
           - --role=worker
           - --peer-db=$(APP_HOME)/peer-database
           - --function-db=$(APP_HOME)/function-database

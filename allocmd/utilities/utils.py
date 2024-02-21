@@ -7,6 +7,7 @@ from termcolor import colored, cprint
 import time
 import shutil 
 from .typings import Command
+import re
 
 def create_worker_account(worker_name):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,8 +52,10 @@ def create_worker_account(worker_name):
                             check=True)
 
         with open(key_path, 'r') as file:
+            content = file.read()
             lines = file.readlines()
 
+        address = re.search(r'address: (\w+)', content).group(1)
         mnemonic = lines[-1].strip()
 
         process = subprocess.Popen(['allorad', 'keys', 'export', worker_name, '--unarmored-hex', '--unsafe'], 
@@ -67,9 +70,15 @@ def create_worker_account(worker_name):
         hex_coded_pk = hex_pk_result.strip()
         with open(key_path, "a") as file:
             file.write(f"\nHEX-CODED PRIVATE KEY: \n{hex_coded_pk}")
+
+        subprocess.run([
+                        'curl',
+                        '-Lvvv',
+                        f'https://devnet-faucet.staging-us-east-1.behindthecurtain.xyz:8443/send/allora-devnet/{address}'
+                    ], stdout=subprocess.DEVNULL)
         
         print(colored(f"keys created for this worker. please check {worker_name}.keys for your address and mnemonic", "green"))
-        return mnemonic, hex_coded_pk
+        return mnemonic, hex_coded_pk, address
     else:
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
         return ''

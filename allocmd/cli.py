@@ -161,11 +161,12 @@ def deploy():
 
         worker_name = config['initialize']['name']
         accound_details = None
-        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk']:
+        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk'] or not config['deploy']['address']:
             accound_details = create_worker_account(worker_name)
 
         mnemonic = accound_details[0] if accound_details else config['deploy']['mnemonic']
         hex_coded_pk = accound_details[1] if accound_details else config['deploy']['hex_coded_pk']
+        address = accound_details[2] if accound_details else config['deploy']['address']
         worker_image_uri = config['deploy']['image_uri']
         worker_image_tag = config['deploy']['image_tag']
         boot_nodes = config['deploy']['boot_nodes']
@@ -182,7 +183,17 @@ def deploy():
             {
                 "template_name": "values.yaml.j2",
                 "file_name": "values.yaml",
-                "context": {"worker_image_uri": worker_image_uri, "worker_image_tag": worker_image_tag, "worker_name": worker_name, "boot_nodes": boot_nodes, "chain_rpc_address": chain_rpc_address, "chain_topic_id": chain_topic_id, "mnemonic": mnemonic, "hex_coded_pk": hex_coded_pk}
+                "context": {
+                    "worker_image_uri": worker_image_uri, 
+                    "worker_image_tag": worker_image_tag, 
+                    "worker_name": worker_name, 
+                    "boot_nodes": boot_nodes, 
+                    "chain_rpc_address": chain_rpc_address, 
+                    "chain_topic_id": chain_topic_id, 
+                    "mnemonic": mnemonic, 
+                    "hex_coded_pk": hex_coded_pk,
+                    "address": address
+                }
             }
         ]
 
