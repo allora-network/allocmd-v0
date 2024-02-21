@@ -60,8 +60,7 @@ def create_worker_account(worker_name):
                                 capture_output=True, 
                                 text=True,
                                 cwd=allora_chain_dir,
-                                env=env, 
-                                stderr=subprocess.STDOUT)
+                                env=env)
         
         hex_coded_pk = hex_pk_result.stdout.strip()
         with open(key_path, "w") as file:

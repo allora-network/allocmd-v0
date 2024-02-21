@@ -128,47 +128,4 @@ additionalYamlManifests:
       name: sample_variable
     type: Opaque
     data:
-      SAMPLE_ENV_VAR: "VVAtYTYxMjg5MDFjMTljNDhhN2E3OWIzZDYw" # base64
-  
-  - kind: ServiceAccount
-    apiVersion: v1
-    metadata:
-      name: {{worker_name}}-service-account
-      annotations:
-        eks.amazonaws.com/role-arn: "{{ role_arn }}"
-  
-  - kind: ExternalSecret
-    apiVersion: external-secrets.io/v1beta1
-    metadata:
-      name: {{ worker_name }}-allora-account-external-secret
-    spec:
-      refreshInterval: 60s
-      secretStoreRef:
-        name: {{ worker_name }}-allora-account-secret-store
-        kind: SecretStore
-      target:
-        name: {{ worker_name }}-allora-account
-        deletionPolicy: "Delete"
-      dataFrom:
-        - find:
-            conversionStrategy: Default
-            decodingStrategy: None
-            name:
-              regexp: {{ worker_name }}-allora-account
-
-  - kind: SecretStore
-    apiVersion: external-secrets.io/v1beta1
-    metadata:
-      name: {{ worker_name }}-allora-account-secret-store
-    spec:
-      provider:
-        aws:
-          service: SecretsManager
-          region: us-east-1
-          auth:
-            jwt:
-              serviceAccountRef:
-                name: {{worker_name}}-service-account
-
-
-
+      SAMPLE_ENV_VAR: "c2FtcGxlIGVudmlyb25tZW50IHZhcmlhYmxl" # base64
