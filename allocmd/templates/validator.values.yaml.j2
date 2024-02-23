@@ -1,0 +1,123 @@
+# Begin your modification here if necessary
+# check https://github.com/upshot-tech/helm-charts/blob/main/charts/universal-helm/templates/statefulsets.yaml for the charttemplate that uses this helm value
+
+statefulsets:
+  - name: {{ name }}-validators
+    replicas: 1
+
+    persistence:
+      size: 20Gi
+      storageClassName: gp2
+      volumeMountPath: /data
+
+    initContainers:
+      - name: {{ name }}-allora-keys-generator
+        image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/allora-chain:dev-latest
+        env:
+          - name: APP_HOME
+            value: "/data"
+          - name: GENESIS_FILE
+            value: "/data/config/genesis.json"
+          - name: ACCOUNT_NAME
+            value: "{{ name }}"
+          - name: KEYRING_BACKEND
+            value: "test" # persist in memory and serve from any secure external-secret
+        workingDir: /data
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -ex
+
+            #* initialize allora validator
+            if [ ! -f $GENESIS_FILE ]; then
+              allorad --home=${APP_HOME} init {{ name }}
+              rm -r $GENESIS_FILE
+
+              echo "Genesis not exist, downloading it."
+              mkdir -p $(dirname $GENESIS_FILE)
+              curl https://raw.githubusercontent.com/upshot-tech/chains/main/devnet/genesis.json -o $GENESIS_FILE
+            else
+                echo "allora validator already initialized"
+            fi
+
+            #* Import account
+            if allorad keys --home=${APP_HOME} --keyring-backend $KEYRING_BACKEND show $ACCOUNT_NAME >/dev/null 2>&1 ; then
+              echo "$ACCOUNT_NAME already imported to allora chain directory"
+            else
+              echo "importing $ACCOUNT_NAME to allora chain directory"
+              allorad keys import-hex --home=${APP_HOME} --keyring-backend $KEYRING_BACKEND $ACCOUNT_NAME {{ hex_coded_pk }}
+            fi
+        securityContext:
+          runAsUser: 1001
+        volumeMounts:
+          - name: {{ name }}-validators-data
+            mountPath: /data
+
+    containers:
+      - name: {{ name }}-validator
+        image:
+          repository: 696230526504.dkr.ecr.us-east-1.amazonaws.com/allora-chain
+          tag: dev-latest
+        workingDir: /data
+        command:
+          - allorad
+          - --home=/data
+          - start
+          - --rpc.laddr=tcp://0.0.0.0:26657
+          - --grpc.address=0.0.0.0:9090
+          - --minimum-gas-prices=0allo
+          - --log_level=debug
+          - --api.address=tcp://0.0.0.0:1317
+          - --api.enable
+          - --api.enabled-unsafe-cors
+        ports:
+          - name: p2p
+            port: 26656
+          - name: rpc
+            port: 26657
+            type: LoadBalancer
+          - name: grpc
+            port: 9090
+          - name: api
+            port: 1317
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 256m
+            memory: 512Mi
+        startupProbe:
+          tcpSocket:
+            port: 26657
+          periodSeconds: 10
+          failureThreshold: 60
+        livenessProbe:
+          tcpSocket:
+            port: 26657
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              if [ "$(curl -so- http://localhost:26657/status | jq -r '.result.sync_info.catching_up')" = "false" ]; then
+                exit 0
+              else
+                exit 1;
+              fi
+          periodSeconds: 30
+          failureThreshold: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+global:
+  fullnameOverride: {{ name }}
+  serviceAccount:
+    create: true
+    name: allora-chain
+  securityContext:
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroupChangePolicy: "Always"

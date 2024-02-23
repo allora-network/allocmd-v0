@@ -3,10 +3,8 @@ import click
 import subprocess
 from jinja2 import Environment, FileSystemLoader
 from importlib.resources import files
-from enum import Enum, auto
-import yaml
 from termcolor import colored, cprint
-from .utilities.utils import generate_all_files, create_worker_account, print_allora_banner, run_key_generate_command
+from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator
 from .utilities.typings import Command
 
 template_path = files('allocmd').joinpath('templates')
@@ -133,113 +131,19 @@ def terminate():
         return
 
 @click.command()
-def deploy():
-    """Deploy worker node to your production kubernetes cluster"""
+@click.option('--type', 'type_', required=True, type=click.Choice(['validator', 'worker'], case_sensitive=False), help='The allora resource type you want to deploy.')
+def deploy(type_):
+    """Deploy resource production kubernetes cluster"""
 
-    print(colored('\nREQUIREMENTS', 'yellow', attrs=['bold']))
-    print(colored('1. Ensure to have the Dockerfile built and docker image pushed to your preferred registry.\n'
-                  '   You should have your image URI and tag available\n', 'yellow'))
-    print(colored('2. Ensure you have your Kubernetes cluster configured to your kubeconfig as the current context.', 'yellow'))
-    print(colored('3. Ensure you have updated the ./config.yaml file with image uri and topic id\n'
-                  '   Your wallet will be created for you and your mnemonic will be updated automagically\n', 'yellow'))
-    
-
-    print(colored('\nDEPENDENCIES', 'yellow', attrs=['bold']))
-    print(colored('You must have the following tools installed in your machine to ensure successful deployment\n'
-                  '1. helm: for deployment of worker into kubernetes cluster.\n'
-                  '2. make: for installation of allora-chain to generate worker wallet account\n', 'yellow'))
-
-    if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
-
-        config_path = os.path.join(os.getcwd(), 'config.yaml')
-        try:
-            with open(config_path, 'r') as file:
-                config = yaml.safe_load(file)
-        except yaml.YAMLError as e:
-            print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
-            return
-
-        worker_name = config['initialize']['name']
-        account_details = None
-        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk'] or not config['deploy']['address']:
-            account_details = create_worker_account(worker_name)
-
-        mnemonic = account_details[0] if account_details else config['deploy']['mnemonic']
-        hex_coded_pk = account_details[1] if account_details else config['deploy']['hex_coded_pk']
-        address = account_details[2] if account_details else config['deploy']['address']
-        worker_image_uri = config['deploy']['image_uri']
-        worker_image_tag = config['deploy']['image_tag']
-        boot_nodes = config['deploy']['boot_nodes']
-        chain_rpc_address = config['deploy']['chain_rpc_address']
-        chain_topic_id = config['deploy']['chain_topic_id']
-
-        if not config['deploy']['mnemonic'] or not config['deploy']['hex_coded_pk'] or not config['deploy']['address']:
-            config['deploy']['mnemonic'] = mnemonic
-            config['deploy']['hex_coded_pk'] = hex_coded_pk
-            config['deploy']['address'] = address
-            with open(config_path, 'w') as file:
-                yaml.safe_dump(config, file)
-
-        file_configs = [
-            {
-                "template_name": "values.yaml.j2",
-                "file_name": "values.yaml",
-                "context": {
-                    "worker_image_uri": worker_image_uri, 
-                    "worker_image_tag": worker_image_tag, 
-                    "worker_name": worker_name, 
-                    "boot_nodes": boot_nodes, 
-                    "chain_rpc_address": chain_rpc_address, 
-                    "chain_topic_id": chain_topic_id, 
-                    "mnemonic": mnemonic, 
-                    "hex_coded_pk": hex_coded_pk
-                }
-            }
-        ]
-
-        generate_all_files(env, file_configs, Command.DEPLOY)
-
-        try:
-            current_context = subprocess.run(["kubectl", "config", "current-context"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
-            print(colored("Current Kubernetes context: ", 'green') + colored(current_context, 'cyan'))
-        except subprocess.CalledProcessError:
-            print(colored("Failed to get current Kubernetes context. Is kubectl configured correctly?", 'red'))
-            return
-
-        try:
-            subprocess.run(["helm", "version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print(colored("Helm is already installed.", 'green'))
-        except subprocess.CalledProcessError:
-            try:
-                print(colored("Attempting to install Helm...", 'yellow'))
-                subprocess.run("curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash", shell=True, check=True)
-                print(colored("Helm installed successfully.", 'green'))
-            except subprocess.CalledProcessError as e:
-                print(colored(f"Failed to install Helm: {e}", 'red'))
-                return
-
-        try:
-
-            print(colored("Adding the 'upshot' Helm repository...", 'yellow'))
-            subprocess.run(["helm", "repo", "add", "upshot", "https://upshot-tech.github.io/helm-charts"], check=True)
-            subprocess.run(["helm", "repo", "update"], check=True)
-            print(colored("'upshot' repository added and updated successfully.", 'green'))
-            
-            print(colored("Installing the Helm chart 'universal-helm' from 'upshot' repository...", 'yellow'))
-            compose_dir = os.path.join(os.getcwd()) 
-            values_file_path = os.path.join(compose_dir, "values.yaml")
-            if not os.path.exists(values_file_path):
-                print(colored("Values file not found.", 'red'))
-                return
-            subprocess.run(["helm", "install", worker_name, "upshot/universal-helm", "-f", values_file_path], check=True)
-            print(colored("Helm chart 'universal-helm' installed successfully.", 'green'))
-            
-        except subprocess.CalledProcessError as e:
-            print(colored(f"An error occurred: {e}", 'red'))
-            return
+    if type_ == 'worker':
+        deployWorker(env)
+    elif type_ == 'validator':
+        deployValidator(env)
     else:
-        print(colored('Operation cancelled.', 'magenta'))
+        click.echo("Invalid resource type specified.")
 
+
+    
 cli.add_command(init)
 cli.add_command(run)
 cli.add_command(terminate)

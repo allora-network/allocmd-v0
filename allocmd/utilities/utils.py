@@ -8,8 +8,9 @@ import time
 import shutil 
 from .typings import Command
 import re
+import yaml
 
-def create_worker_account(worker_name):
+def create_worker_account(worker_name, type='worker'):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     cli_tool_dir = os.path.dirname(current_file_dir)
     allora_chain_dir = os.path.join(cli_tool_dir, 'allora-chain')
@@ -42,7 +43,7 @@ def create_worker_account(worker_name):
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL)
 
-        key_path = os.path.join(os.getcwd(), f'{worker_name}.key')
+        key_path = os.path.join(os.getcwd(), f'{worker_name}.{type}.key')
         with open(key_path, 'w') as file:
             subprocess.run(['allorad', 'keys', 'add', worker_name, '--keyring-backend', 'test'], 
                             cwd=allora_chain_dir,
@@ -134,3 +135,203 @@ def run_key_generate_command(worker_name):
             return head_peer_id
     except subprocess.CalledProcessError as e:
         click.echo(f"error generating local workers identity: {e}", err=True)
+
+def deployWorker(env: Environment):
+    """Deploy resource production kubernetes cluster"""
+
+    print(colored('\nREQUIREMENTS', 'yellow', attrs=['bold']))
+    print(colored('1. Ensure to have the Dockerfile built and docker image pushed to your preferred registry.\n'
+                  '   You should have your image URI and tag available\n', 'yellow'))
+    print(colored('2. Ensure you have your Kubernetes cluster configured to your kubeconfig as the current context.', 'yellow'))
+    print(colored('3. Ensure you have updated the ./config.yaml file with image uri and topic id\n'
+                  '   Your wallet will be created for you and your mnemonic will be updated automagically\n', 'yellow'))
+    
+
+    print(colored('\nDEPENDENCIES', 'yellow', attrs=['bold']))
+    print(colored('You must have the following tools installed in your machine to ensure successful deployment\n'
+                  '1. helm: for deployment of worker into kubernetes cluster.\n'
+                  '2. make: for installation of allora-chain to generate worker wallet account\n', 'yellow'))
+
+    if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
+
+        config_path = os.path.join(os.getcwd(), 'config.yaml')
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+        except yaml.YAMLError as e:
+            print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
+            return
+
+        worker_name = config['initialize']['name']
+        account_details = None
+        if not config['deploy']['worker']['mnemonic'] or not config['deploy']['worker']['hex_coded_pk'] or not config['deploy']['worker']['address']:
+            account_details = create_worker_account(worker_name, 'worker')
+
+        mnemonic = account_details[0] if account_details else config['deploy']['worker']['mnemonic']
+        hex_coded_pk = account_details[1] if account_details else config['deploy']['worker']['hex_coded_pk']
+        address = account_details[2] if account_details else config['deploy']['worker']['address']
+        worker_image_uri = config['deploy']['worker']['image_uri']
+        worker_image_tag = config['deploy']['worker']['image_tag']
+        boot_nodes = config['deploy']['worker']['boot_nodes']
+        chain_rpc_address = config['deploy']['worker']['chain_rpc_address']
+        chain_topic_id = config['deploy']['worker']['chain_topic_id']
+
+        if not config['deploy']['worker']['mnemonic'] or not config['deploy']['worker']['hex_coded_pk'] or not config['deploy']['worker']['address']:
+            config['deploy']['worker']['mnemonic'] = mnemonic
+            config['deploy']['worker']['hex_coded_pk'] = hex_coded_pk
+            config['deploy']['worker']['address'] = address
+            with open(config_path, 'w') as file:
+                yaml.safe_dump(config, file)
+
+        file_configs = [
+            {
+                "template_name": "worker.values.yaml.j2",
+                "file_name": "worker.values.yaml",
+                "context": {
+                    "worker_image_uri": worker_image_uri, 
+                    "worker_image_tag": worker_image_tag, 
+                    "worker_name": worker_name, 
+                    "boot_nodes": boot_nodes, 
+                    "chain_rpc_address": chain_rpc_address, 
+                    "chain_topic_id": chain_topic_id, 
+                    "mnemonic": mnemonic, 
+                    "hex_coded_pk": hex_coded_pk
+                }
+            }
+        ]
+
+        generate_all_files(env, file_configs, Command.DEPLOY)
+
+        try:
+            current_context = subprocess.run(["kubectl", "config", "current-context"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
+            print(colored("Current Kubernetes context: ", 'green') + colored(current_context, 'cyan'))
+        except subprocess.CalledProcessError:
+            print(colored("Failed to get current Kubernetes context. Is kubectl configured correctly?", 'red'))
+            return
+
+        try:
+            subprocess.run(["helm", "version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print(colored("Helm is already installed.", 'green'))
+        except subprocess.CalledProcessError:
+            try:
+                print(colored("Attempting to install Helm...", 'yellow'))
+                subprocess.run("curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash", shell=True, check=True)
+                print(colored("Helm installed successfully.", 'green'))
+            except subprocess.CalledProcessError as e:
+                print(colored(f"Failed to install Helm: {e}", 'red'))
+                return
+
+        try:
+
+            print(colored("Adding the 'upshot' Helm repository...", 'yellow'))
+            subprocess.run(["helm", "repo", "add", "upshot", "https://upshot-tech.github.io/helm-charts"], check=True)
+            subprocess.run(["helm", "repo", "update"], check=True)
+            print(colored("'upshot' repository added and updated successfully.", 'green'))
+            
+            print(colored("Installing the Helm chart 'universal-helm' from 'upshot' repository...", 'yellow'))
+            compose_dir = os.path.join(os.getcwd()) 
+            values_file_path = os.path.join(compose_dir, "worker.values.yaml")
+            if not os.path.exists(values_file_path):
+                print(colored("Values file not found.", 'red'))
+                return
+            subprocess.run(["helm", "install", f"{worker_name}-worker", "upshot/universal-helm", "-f", values_file_path], check=True)
+            print(colored("Helm chart 'universal-helm' installed successfully.", 'green'))
+            
+        except subprocess.CalledProcessError as e:
+            print(colored(f"An error occurred: {e}", 'red'))
+            return
+    else:
+        print(colored('Operation cancelled.', 'magenta'))
+
+def deployValidator(env: Environment):
+    """Deploy resource production kubernetes cluster"""
+
+    print(colored('\nREQUIREMENTS', 'yellow', attrs=['bold']))
+    print(colored('1. Ensure you have your Kubernetes cluster configured to your kubeconfig as the current context.', 'yellow'))
+    print(colored('2. Ensure you have updated the ./config.yaml file\n'
+                  '   Your wallet will be created for you and your mnemonic will be updated automagically\n', 'yellow'))
+
+    print(colored('\nDEPENDENCIES', 'yellow', attrs=['bold']))
+    print(colored('You must have the following tools installed in your machine to ensure successful deployment\n'
+                  '1. helm: for deployment of worker into kubernetes cluster.\n'
+                  '2. make: for installation of allora-chain to generate worker wallet account\n', 'yellow'))
+
+    if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
+
+        config_path = os.path.join(os.getcwd(), 'config.yaml')
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+        except yaml.YAMLError as e:
+            print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
+            return
+
+        validator_name = config['initialize']['name']
+        account_details = None
+        if not config['deploy']['validator']['mnemonic'] or not config['deploy']['validator']['hex_coded_pk'] or not config['deploy']['validator']['address']:
+            account_details = create_worker_account(validator_name, 'validator')
+
+        mnemonic = account_details[0] if account_details else config['deploy']['validator']['mnemonic']
+        hex_coded_pk = account_details[1] if account_details else config['deploy']['validator']['hex_coded_pk']
+        address = account_details[2] if account_details else config['deploy']['validator']['address']
+
+        if not config['deploy']['validator']['mnemonic'] or not config['deploy']['validator']['hex_coded_pk'] or not config['deploy']['validator']['address']:
+            config['deploy']['validator']['mnemonic'] = mnemonic
+            config['deploy']['validator']['hex_coded_pk'] = hex_coded_pk
+            config['deploy']['validator']['address'] = address
+            with open(config_path, 'w') as file:
+                yaml.safe_dump(config, file)
+
+        file_configs = [
+            {
+                "template_name": "validator.values.yaml.j2",
+                "file_name": "validator.values.yaml",
+                "context": {
+                    "name": validator_name, 
+                    "hex_coded_pk": hex_coded_pk
+                }
+            }
+        ]
+
+        generate_all_files(env, file_configs, Command.DEPLOY)
+
+        try:
+            current_context = subprocess.run(["kubectl", "config", "current-context"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
+            print(colored("Current Kubernetes context: ", 'green') + colored(current_context, 'cyan'))
+        except subprocess.CalledProcessError:
+            print(colored("Failed to get current Kubernetes context. Is kubectl configured correctly?", 'red'))
+            return
+
+        try:
+            subprocess.run(["helm", "version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print(colored("Helm is already installed.", 'green'))
+        except subprocess.CalledProcessError:
+            try:
+                print(colored("Attempting to install Helm...", 'yellow'))
+                subprocess.run("curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash", shell=True, check=True)
+                print(colored("Helm installed successfully.", 'green'))
+            except subprocess.CalledProcessError as e:
+                print(colored(f"Failed to install Helm: {e}", 'red'))
+                return
+
+        try:
+
+            print(colored("Adding the 'upshot' Helm repository...", 'yellow'))
+            subprocess.run(["helm", "repo", "add", "upshot", "https://upshot-tech.github.io/helm-charts"], check=True)
+            subprocess.run(["helm", "repo", "update"], check=True)
+            print(colored("'upshot' repository added and updated successfully.", 'green'))
+            
+            print(colored("Installing the Helm chart 'universal-helm' from 'upshot' repository...", 'yellow'))
+            compose_dir = os.path.join(os.getcwd()) 
+            values_file_path = os.path.join(compose_dir, "validator.values.yaml")
+            if not os.path.exists(values_file_path):
+                print(colored("Values file not found.", 'red'))
+                return
+            subprocess.run(["helm", "install", f"{validator_name}-validator", "upshot/universal-helm", "-f", values_file_path], check=True)
+            print(colored("Helm chart 'universal-helm' installed successfully.", 'green'))
+            
+        except subprocess.CalledProcessError as e:
+            print(colored(f"An error occurred: {e}", 'red'))
+            return
+    else:
+        print(colored('Operation cancelled.', 'magenta'))

@@ -27,7 +27,7 @@ statefulsets:
               echo "generating new node identity for {{ worker_name }} worker"
               mkdir -p ${KEYS_PATH}
               cd $KEYS_PATH
-              upshot-keys
+              allora-keys
             fi
         securityContext:
           runAsUser: 1001
@@ -76,7 +76,7 @@ statefulsets:
                 key: SAMPLE_ENV_VAR
         workingDir: /data
         command:
-          - upshot-node
+          - allora-node
           - --role=worker
           - --peer-db=$(APP_HOME)/peer-database
           - --function-db=$(APP_HOME)/function-database
