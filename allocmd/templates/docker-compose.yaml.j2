@@ -3,10 +3,10 @@ services:
   worker:
     container_name: worker
     build: .
-    command: >
-      ./upshot-node --role=worker --peer-db=/data/worker/peerdb --function-db=/data/worker/function-db 
+    commander: >
+      allora-node --role=worker --peer-db=/data/worker/peer-database --function-db=/data/worker/function-database 
       --runtime-path=/app/runtime --runtime-cli=bls-runtime --workspace=/data/worker/workspace
-      --private-key=/data/worker/key/priv.bin --log-level=debug --port=9011 
+      --private-key=/data/worker/key/priv.bin --log-level=debug --port=9011 --topic={{ topic_id }}
       --boot-nodes=/ip4/172.19.0.100/tcp/9010/p2p/{{ head_peer_id }}
     volumes:
       - type: bind
@@ -24,9 +24,9 @@ services:
 
   head:
     container_name: head
-    image: 696230526504.dkr.ecr.us-east-1.amazonaws.com/allora-inference-base-head:dev-latest
+    image: alloranetwork/allora-inference-base-head:latest
     command: >
-      ./upshot-node --role=head --peer-db=/data/head/peerdb --function-db=/data/head/function-db
+      allora-node --role=head --peer-db=/data/head/peer-database --function-db=/data/head/function-database
       --runtime-path=/app/runtime --runtime-cli=bls-runtime --workspace=/data/head/workspace
       --private-key=/data/head/key/priv.bin --log-level=debug --port=9010 --rest-api=:6000
     ports:

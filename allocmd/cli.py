@@ -17,7 +17,8 @@ def cli():
 
 @click.command()
 @click.option('--name', required=True, help='Name of the worker.')
-def init(name):
+@click.option('--topic', required=True, type=int, help='The topic ID the worker is registered with.')
+def init(name, topic):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
     print_allora_banner()
@@ -45,7 +46,7 @@ def init(name):
             {
                 "template_name": "docker-compose.yaml.j2",
                 "file_name": "docker-compose.yaml",
-                "context": {"head_peer_id": head_peer_id}
+                "context": {"head_peer_id": head_peer_id, "topic_id": topic}
             },
             {
                 "template_name": "requirements.txt.j2",
