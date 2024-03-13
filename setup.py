@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='allocmd',
-    version='0.1.39',
+    version='0.1.42',
     author='Upshot Technologies',
     author_email='tobi@upshot.xyz',
     description='A CLI tool for creating Allora Chain Worker Nodes',
