@@ -10,7 +10,7 @@ from .typings import Command
 import re
 import yaml
 
-def create_worker_account(worker_name, type='worker'):
+def create_worker_account(worker_name, faucet_url, type='worker'):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     cli_tool_dir = os.path.dirname(current_file_dir)
     allora_chain_dir = os.path.join(cli_tool_dir, 'allora-chain')
@@ -75,7 +75,7 @@ def create_worker_account(worker_name, type='worker'):
         subprocess.run([
                         'curl',
                         '-Lvvv',
-                        f'https://devnet-faucet.staging-us-east-1.behindthecurtain.xyz:8443/send/allora-devnet/{address}'
+                        f'{faucet_url}/send/allora-devnet/{address}'
                     ], stdout=subprocess.DEVNULL)
         
         print(colored(f"keys created for this worker. please check {worker_name}.keys for your address and mnemonic", "green"))
@@ -163,9 +163,10 @@ def deployWorker(env: Environment):
             return
 
         worker_name = config['initialize']['name']
+        faucet_url = config['deploy']['faucet_url']
         account_details = None
         if not config['deploy']['worker']['mnemonic'] or not config['deploy']['worker']['hex_coded_pk'] or not config['deploy']['worker']['address']:
-            account_details = create_worker_account(worker_name, 'worker')
+            account_details = create_worker_account(worker_name, faucet_url, 'worker')
 
         mnemonic = account_details[0] if account_details else config['deploy']['worker']['mnemonic']
         hex_coded_pk = account_details[1] if account_details else config['deploy']['worker']['hex_coded_pk']
@@ -267,9 +268,10 @@ def deployValidator(env: Environment):
             return
 
         validator_name = config['initialize']['name']
+        faucet_url = config['deploy']['faucet_url']
         account_details = None
         if not config['deploy']['validator']['mnemonic'] or not config['deploy']['validator']['hex_coded_pk'] or not config['deploy']['validator']['address']:
-            account_details = create_worker_account(validator_name, 'validator')
+            account_details = create_worker_account(validator_name, faucet_url, 'validator')
 
         mnemonic = account_details[0] if account_details else config['deploy']['validator']['mnemonic']
         hex_coded_pk = account_details[1] if account_details else config['deploy']['validator']['hex_coded_pk']
