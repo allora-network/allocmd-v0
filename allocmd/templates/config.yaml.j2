@@ -1,22 +1,17 @@
 # place all worker configuration variables here
 
-initialize:
-  name: {{ name }}
-
-deploy: 
-  faucet_url: ""
-  worker:
-    image_uri: ""
-    image_tag: ""
-    boot_nodes: /dns4/heads.testnet.allora.network/tcp/9010/p2p/12D3KooWGAA1C2UNyj51QaGX5aXnVzRqeaqhyhUFFJixdqshwWC3
-    chain_rpc_address: https://allora-rpc.testnet.allora.network:8443/
-    chain_topic_id: 0
-    mnemonic: ""
-    hex_coded_pk: ""
-    address: ""
-  validator:
-    image_uri: alloranetwork/allora-chain
-    image_tag: latest
-    mnemonic: ""
-    hex_coded_pk: ""
-    address: ""
+name: {{ name }}
+faucet_url: https://faucet.testnet.allora.network:8443/
+worker:
+  boot_nodes: /dns4/heads.testnet.allora.network/tcp/9010/p2p/12D3KooWGAA1C2UNyj51QaGX5aXnVzRqeaqhyhUFFJixdqshwWC3
+  chain_rpc_address: https://allora-rpc.testnet.allora.network:8443/
+  chain_topic_id: {{ topic_id }}
+  mnemonic: ""
+  hex_coded_pk: ""
+  address: ""
+validator:
+  image_uri: alloranetwork/allora-chain
+  image_tag: latest
+  mnemonic: ""
+  hex_coded_pk: ""
+  address: ""

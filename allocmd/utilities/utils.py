@@ -75,10 +75,10 @@ def create_worker_account(worker_name, faucet_url, type='worker'):
         subprocess.run([
                         'curl',
                         '-Lvvv',
-                        f'{faucet_url}/send/allora-devnet/{address}'
+                        f'{faucet_url}/send/testnet/{address}'
                     ], stdout=subprocess.DEVNULL)
         
-        print(colored(f"keys created for this worker. please check {worker_name}.keys for your address and mnemonic", "green"))
+        print(colored(f"keys created and testnet-funded for this worker. please check config.yaml for your address and mnemonic", "green"))
         return mnemonic, hex_coded_pk, address
     else:
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
@@ -136,6 +136,32 @@ def run_key_generate_command(worker_name):
     except subprocess.CalledProcessError as e:
         click.echo(f"error generating local workers identity: {e}", err=True)
 
+def generateWorkerAccount(worker_name):
+    config_path = os.path.join(os.getcwd(), worker_name, 'config.yaml')
+    try:
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
+    except yaml.YAMLError as e:
+        print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
+        return
+
+    worker_name = config['name']
+    faucet_url = config['faucet_url']
+    account_details = None
+    if not config['worker']['mnemonic'] or not config['worker']['hex_coded_pk'] or not config['worker']['address']:
+        account_details = create_worker_account(worker_name, faucet_url, 'worker')
+
+    mnemonic = account_details[0] if account_details else config['worker']['mnemonic']
+    hex_coded_pk = account_details[1] if account_details else config['worker']['hex_coded_pk']
+    address = account_details[2] if account_details else config['worker']['address']
+
+    if not config['worker']['mnemonic'] or not config['worker']['hex_coded_pk'] or not config['worker']['address']:
+        config['worker']['mnemonic'] = mnemonic
+        config['worker']['hex_coded_pk'] = hex_coded_pk
+        config['worker']['address'] = address
+        with open(config_path, 'w') as file:
+            yaml.safe_dump(config, file)
+
 def deployWorker(env: Environment):
     """Deploy resource production kubernetes cluster"""
 
@@ -162,25 +188,25 @@ def deployWorker(env: Environment):
             print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
             return
 
-        worker_name = config['initialize']['name']
-        faucet_url = config['deploy']['faucet_url']
+        worker_name = config['name']
+        faucet_url = config['faucet_url']
         account_details = None
-        if not config['deploy']['worker']['mnemonic'] or not config['deploy']['worker']['hex_coded_pk'] or not config['deploy']['worker']['address']:
+        if not config['worker']['mnemonic'] or not config['worker']['hex_coded_pk'] or not config['worker']['address']:
             account_details = create_worker_account(worker_name, faucet_url, 'worker')
 
-        mnemonic = account_details[0] if account_details else config['deploy']['worker']['mnemonic']
-        hex_coded_pk = account_details[1] if account_details else config['deploy']['worker']['hex_coded_pk']
-        address = account_details[2] if account_details else config['deploy']['worker']['address']
-        worker_image_uri = config['deploy']['worker']['image_uri']
-        worker_image_tag = config['deploy']['worker']['image_tag']
-        boot_nodes = config['deploy']['worker']['boot_nodes']
-        chain_rpc_address = config['deploy']['worker']['chain_rpc_address']
-        chain_topic_id = config['deploy']['worker']['chain_topic_id']
+        mnemonic = account_details[0] if account_details else config['worker']['mnemonic']
+        hex_coded_pk = account_details[1] if account_details else config['worker']['hex_coded_pk']
+        address = account_details[2] if account_details else config['worker']['address']
+        worker_image_uri = config['worker']['image_uri']
+        worker_image_tag = config['worker']['image_tag']
+        boot_nodes = config['worker']['boot_nodes']
+        chain_rpc_address = config['worker']['chain_rpc_address']
+        chain_topic_id = config['worker']['chain_topic_id']
 
-        if not config['deploy']['worker']['mnemonic'] or not config['deploy']['worker']['hex_coded_pk'] or not config['deploy']['worker']['address']:
-            config['deploy']['worker']['mnemonic'] = mnemonic
-            config['deploy']['worker']['hex_coded_pk'] = hex_coded_pk
-            config['deploy']['worker']['address'] = address
+        if not config['worker']['mnemonic'] or not config['worker']['hex_coded_pk'] or not config['worker']['address']:
+            config['worker']['mnemonic'] = mnemonic
+            config['worker']['hex_coded_pk'] = hex_coded_pk
+            config['worker']['address'] = address
             with open(config_path, 'w') as file:
                 yaml.safe_dump(config, file)
 
@@ -267,20 +293,20 @@ def deployValidator(env: Environment):
             print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
             return
 
-        validator_name = config['initialize']['name']
-        faucet_url = config['deploy']['faucet_url']
+        validator_name = config['name']
+        faucet_url = config['faucet_url']
         account_details = None
-        if not config['deploy']['validator']['mnemonic'] or not config['deploy']['validator']['hex_coded_pk'] or not config['deploy']['validator']['address']:
+        if not config['validator']['mnemonic'] or not config['validator']['hex_coded_pk'] or not config['validator']['address']:
             account_details = create_worker_account(validator_name, faucet_url, 'validator')
 
-        mnemonic = account_details[0] if account_details else config['deploy']['validator']['mnemonic']
-        hex_coded_pk = account_details[1] if account_details else config['deploy']['validator']['hex_coded_pk']
-        address = account_details[2] if account_details else config['deploy']['validator']['address']
+        mnemonic = account_details[0] if account_details else config['validator']['mnemonic']
+        hex_coded_pk = account_details[1] if account_details else config['validator']['hex_coded_pk']
+        address = account_details[2] if account_details else config['validator']['address']
 
-        if not config['deploy']['validator']['mnemonic'] or not config['deploy']['validator']['hex_coded_pk'] or not config['deploy']['validator']['address']:
-            config['deploy']['validator']['mnemonic'] = mnemonic
-            config['deploy']['validator']['hex_coded_pk'] = hex_coded_pk
-            config['deploy']['validator']['address'] = address
+        if not config['validator']['mnemonic'] or not config['validator']['hex_coded_pk'] or not config['validator']['address']:
+            config['validator']['mnemonic'] = mnemonic
+            config['validator']['hex_coded_pk'] = hex_coded_pk
+            config['validator']['address'] = address
             with open(config_path, 'w') as file:
                 yaml.safe_dump(config, file)
 

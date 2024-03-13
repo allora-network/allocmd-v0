@@ -4,7 +4,7 @@ import subprocess
 from jinja2 import Environment, FileSystemLoader
 from importlib.resources import files
 from termcolor import colored, cprint
-from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator
+from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount
 from .utilities.typings import Command
 
 template_path = files('allocmd').joinpath('templates')
@@ -66,11 +66,13 @@ def init(name, topic):
             {
                 "template_name": "config.yaml.j2",
                 "file_name": "config.yaml",
-                "context": {"name": name}
+                "context": {"name": name, "topic_id": topic}
             }
         ]
 
         generate_all_files(env, file_configs, Command.INIT, name)
+
+        generateWorkerAccount(name)
     else:
         cprint("\nOperation cancelled.", 'red')
 
