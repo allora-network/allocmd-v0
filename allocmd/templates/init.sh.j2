@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -ex
+
+if allorad keys --keyring-backend test show {{ worker_name }} >/dev/null 2>&1 ; then
+echo "{{ worker_name }} account already imported"
+else
+echo "Importing account {{ worker_name }} from hexcoded private key"
+allorad keys import-hex --home=/data/.allorad --keyring-backend test {{ worker_name }} {{ hex_coded_pk }}
+fi

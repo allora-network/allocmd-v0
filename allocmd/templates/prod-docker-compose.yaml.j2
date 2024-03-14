@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  init_{{ worker_name }}:
+    container_name: init_{{ worker_name }}
+    image: alloranetwork/allora-chain:latest
+    volumes:
+      - ./data:/data
+    entrypoint: /data/scripts/init.sh
+
+  {{ worker_name }}:
+    container_name: {{ worker_name }}
+    build: .
+    command:
+      - allora-node
+      - --role=worker
+      - --peer-db=/data/worker/peer-database
+      - --function-db=/data/worker/function-database
+      - --runtime-path=/app/runtime
+      - --runtime-cli=bls-runtime
+      - --workspace=/data/worker/workspace
+      - --private-key=/data/worker/key/priv.bin
+      - --log-level=debug
+      - --port=9010
+      - --boot-nodes={{ boot_nodes }}
+      - --topic={{ topic_id }}
+      - --allora-node-rpc-address={{ chain_rpc_address }}
+      - --allora-chain-home-dir=/data/.allorad
+      - --allora-chain-key-name={{ worker_name}}
+      - --allora-chain-topic-id={{ topic_id }}
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+    env_file:
+      - .env
+    ports:
+      - "9010:9010"
+    depends_on:
+      - init_{{ worker_name }}

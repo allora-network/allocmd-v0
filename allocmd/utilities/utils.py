@@ -162,6 +162,59 @@ def generateWorkerAccount(worker_name):
         with open(config_path, 'w') as file:
             yaml.safe_dump(config, file)
 
+def generateProdCompose(env: Environment):
+    """Deploy resource production kubernetes cluster"""
+
+    subprocess.run("mkdir -p ./data/scripts", shell=True, check=True)
+    # subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True)
+
+    try:
+        result = subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True, capture_output=True, text=True)
+        print(result)
+    except subprocess.CalledProcessError as e:
+        print(f"Command '{e.cmd}' returned non-zero exit status {e.returncode}.")
+        if e.stderr:
+            print(f"Stderr: {e.stderr}")
+
+    config_path = os.path.join(os.getcwd(), 'config.yaml')
+    try:
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
+    except yaml.YAMLError as e:
+        print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
+        return
+
+    worker_name = config['name']
+    hex_coded_pk = config['worker']['hex_coded_pk']
+    boot_nodes = config['worker']['boot_nodes']
+    chain_rpc_address = config['worker']['chain_rpc_address']
+    chain_topic_id = config['worker']['chain_topic_id']
+
+    file_configs = [
+        {
+            "template_name": "prod-docker-compose.yaml.j2",
+            "file_name": "prod-docker-compose.yaml",
+            "context": {
+                "worker_name": worker_name, 
+                "boot_nodes": boot_nodes, 
+                "chain_rpc_address": chain_rpc_address, 
+                "topic_id": chain_topic_id, 
+            }
+        },
+        {
+            "template_name": "init.sh.j2",
+            "file_name": "data/scripts/init.sh",
+            "context": {
+                "worker_name": worker_name, 
+                "hex_coded_pk": hex_coded_pk
+            }
+        }
+    ]
+
+    generate_all_files(env, file_configs, Command.DEPLOY)
+    cprint(f"production docker compose file generated to be deployed", 'green')
+    cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
+
 def deployWorker(env: Environment):
     """Deploy resource production kubernetes cluster"""
 
