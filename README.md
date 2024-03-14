@@ -1,48 +1,7 @@
-# Deploy a Worker Node with allocmd
-
+# Building a Worker Node with the allocmd CLI
 ![Docker!](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
 ![Python!](https://img.shields.io/badge/Python-FFD43B?style=for-the-badge&logo=python&logoColor=blue)
 ![Apache License](https://img.shields.io/badge/Apache%20License-D22128?style=for-the-badge&logo=Apache&logoColor=white)
-
-A worker node is a machine-intelligent application registered on the Allora chain that provides inference/prediction on a particular topic it's subscribed to and gets rewarded by the Allora chain validators based on the inference quality.
-
-After providing more details about the structure of a worker node, this guide will walk through how to build a worker node and then deploy it to a remote environment. We do so using a tool created for the convenience of data scientists, `allocmd`. However, one can choose to build and deploy a worker node without this tool, which we discuss in the next section <a href="https://docs.allora.network/docs/build-a-worker-node-from-scratch" target="_blank">here</a>.
-
-## Components of a Worker Node
-
-A Worker Node in the Allora Protocol consists of the following components:
-
-[block:image]
-{
-  "images": [
-    {
-      "image": [
-        "https://files.readme.io/c081b88-model-diagram-final-v32x.png",
-        null,
-        ""
-      ],
-      "align": "center"
-    }
-  ]
-}
-[/block]
-
-
-### 1. Allora Inference Base Image (AIB)
-
-This Docker image serves as the base image for your Dockerfile and includes the fundamental node logic. It handles the combination of every part that makes the whole of the worker node and the accommodation for the additional functionality written in the node function.
-
-### 2. Node Function
-
-This component is the crux of your specific application, enhancing the `allora-inference-base` docker image. The node function stored on IPFS aims to handle all the custom functionalities needed to provide the inferences. While the AIB handles the communication between the worker node and the Allora chain, the node function provides the actual inference. The structure is such that the AIB downloads the function from IPFS given the attached CID and runs the function, which will then run your custom `main.py`. This is where the magic comes in: each worker will use a different, custom `main.py` to provide the inference requested. It is up to the worker to customize  `main.py`. A few examples: the process can be completely run inside that `main.py`, or it can hit a separate service (e.g. a separate backend with a REST API endpoint), it could query a particular database... the possibilities are endless. You can find a more comprehensive example <a href="https://docs.allora.network/docs/build-a-worker-node-from-scratch#2-node-function-python-script" target="_blank">here</a>.
-
-### 3. Head Node
-
-This independent node publishes the Allora chain request and inference topics to be subscribed to by the worker nodes, which provides inference data in response, thereby channeled to the chain. When a worker node is initialized, it starts with an environment variable called `BOOT_NODES`, which helps handle the connection and communications between worker nodes and the head node.
-
-With these components, the worker and head node are registered on the Allora chain, which makes requests to the nodes. The inference request is made to the head from the chain, which in turn publishes the request to be subscribed to by the worker, which will call the functions that invoke your custom logic that handles the actual inference. The request-response is a bidirectional flow from the Allora chain to the head node to the worker node to the node function, and then to the model server.
-
-## Building a Worker Node with the allocmd CLI
 
 The `allocmd` is a CLI tool that handles worker nodes' seamless creation and deployment. With this tool, you do not need to write the worker node from scratch, the CLI tool will help you bootstrap all the needed components to get worker nodes working. All you have to do is to update the `config.yaml` file with your custom parameters, update the provided`main.py`to communicate with your inference server, run the deploy command, and your worker should be up and running.
 
