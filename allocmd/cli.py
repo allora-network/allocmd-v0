@@ -27,8 +27,10 @@ def init(environment, name=None, topic=None):
     if environment == 'dev':
         if topic is None:
             cprint("You must provide topic id when running development init.", 'red')
+            return
         elif name is None:
             cprint("You must provide name when running development init.", 'red')
+            return
 
 
         print_allora_banner()

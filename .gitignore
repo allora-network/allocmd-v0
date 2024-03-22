@@ -4,3 +4,4 @@ allocmd.egg-info
 build
 dist
 .DS_Store
+start.sh
