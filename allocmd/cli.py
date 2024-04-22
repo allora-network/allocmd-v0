@@ -23,7 +23,6 @@ def generate():
     pass
 
 @generate.command()
-@click.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
 @click.option('--name', required=False, help='Name of the worker.')
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
@@ -171,7 +170,7 @@ def deploy(type_):
 
 
     
-cli.add_command(init)
+# cli.add_command(init)
 # cli.add_command(run)
 # cli.add_command(terminate)
 # cli.add_command(deploy)
