@@ -104,8 +104,8 @@ def worker(environment, name=None, topic=None):
             generateProdCompose(env)
 
 @generate.command()
-@click.option('--name', help='Name of the validator.')
-@click.option('--network', help='Your preffered chain network to run the validator on.')
+@click.option('--name',required=True, help='Name of the validator.')
+@click.option('--network', required=True, type=click.Choice(['testnet', 'edgenet']), help='Your preffered chain network to run the validator on.')
 def validator(name=None, network=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
@@ -120,6 +120,8 @@ def validator(name=None, network=None):
     
     if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
         cprint("\nProceeding with the creation of validator node directory...", 'green')
+
+        os.makedirs(name, exist_ok=True)
 
         file_configs = [
             {
