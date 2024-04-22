@@ -1,1 +1,1 @@
-cliVersion = "0.3.5"
+cliVersion = "0.3.6"

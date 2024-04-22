@@ -3,7 +3,7 @@ version: "3"
 services:
   validator0:
     container_name: {{ val_name }}
-    image: "alloranetwork/allora-chain:latest"
+    image: "alloranetwork/allora-chain:v0.0.10"
     environment:
       - NETWORK={{ network }}
       - MONIKER={{ val_name }}

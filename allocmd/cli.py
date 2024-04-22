@@ -138,6 +138,7 @@ def validator(name=None, network=None):
 
         generate_all_files(env, file_configs, Command.INIT, name)
 
+        subprocess.run(['chmod', '+x', 'scripts/start-validator.sh'], check=True)
     else:
         cprint("\nOperation cancelled.", 'red')
  
