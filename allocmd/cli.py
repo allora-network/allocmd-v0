@@ -26,19 +26,19 @@ def generate():
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
 @click.option('--name', required=False, help='Name of the worker.')
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
-def worker(environment, type= BlocklessNodeType.worker, name=None, topic=None):
+def worker(environment, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
-    blocklessNode(environment, env, type, name, topic)
+    blocklessNode(environment, env, BlocklessNodeType.worker, name, topic)
 
 @generate.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
 @click.option('--name', required=False, help='Name of the reputer.')
 @click.option('--topic', required=False, type=int, help='The topic ID the reputer is registered with.')
-def reputer(environment, type= BlocklessNodeType.reputer, name=None, topic=None):
+def reputer(environment, name=None, topic=None):
     """Initialize your Allora Reputer Node with necessary boilerplates"""
 
-    blocklessNode(environment, env, type, name, topic)
+    blocklessNode(environment, env, BlocklessNodeType.reputer, name, topic)
 
 
 @generate.command()
