@@ -121,7 +121,7 @@ def validator(name=None, network=None):
     if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
         cprint("\nProceeding with the creation of validator node directory...", 'green')
 
-        os.makedirs(name, exist_ok=True)
+        os.makedirs(print(f"{name}/scripts"), exist_ok=True)
 
         file_configs = [
             {
@@ -131,7 +131,7 @@ def validator(name=None, network=None):
             },
             {
                 "template_name": "start-validator.sh.j2",
-                "file_name": "start-validator.sh",
+                "file_name": "scripts/start-validator.sh",
                 "context": {"val_name": name, "network": network}
             },
         ]
