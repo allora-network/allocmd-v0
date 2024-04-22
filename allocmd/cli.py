@@ -4,7 +4,7 @@ import subprocess
 from jinja2 import Environment, FileSystemLoader
 from importlib.resources import files
 from termcolor import colored, cprint
-from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose
+from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose, check_docker_running
 from .utilities.typings import Command
 from .utilities.constants import cliVersion
 
@@ -28,6 +28,10 @@ def generate():
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
 def worker(environment, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
+
+    if not check_docker_running():
+        cprint("Docker is not running on your machine, please start docker before running this command", 'red')
+        return
 
     if environment == 'dev':
         if topic is None:
@@ -98,6 +102,49 @@ def worker(environment, name=None, topic=None):
             cprint("You must initialize the worker on dev please run allocmd init --env dev --name <worker name> --topic <topic id> and then run the prod init in the directory created", 'red')
         else:
             generateProdCompose(env)
+
+@generate.command()
+@click.option('--name', help='Name of the validator.')
+@click.option('--network', help='Your preffered chain network to run the validator on.')
+def validator(name=None, network=None):
+    """Initialize your Allora Worker Node with necessary boilerplates"""
+
+    if not check_docker_running():
+        cprint("Docker is not running, please start docker before running this command", 'red')
+        return
+
+    print_allora_banner()
+    cprint("Welcome to the Allora CLI!", 'green', attrs=['bold'])
+    print(colored("Allora CLI assists in the seamless creation and deployment of Allora validator nodes", 'yellow'))
+    cprint(f"\nThis command will generate some files in the directory named '{name}'.", 'cyan')
+    
+    if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
+        cprint("\nProceeding with the creation of validator node directory...", 'green')
+
+        file_configs = [
+            {
+                "template_name": "validator-docker-compose.yaml.j2",
+                "file_name": "validator-docker-compose.yaml",
+                "context": {"val_name": name, "network": network}
+            },
+            {
+                "template_name": "start-validator.sh.j2",
+                "file_name": "start-validator.sh",
+                "context": {"val_name": name, "network": network}
+            },
+        ]
+
+        generate_all_files(env, file_configs, Command.INIT, name)
+
+    else:
+        cprint("\nOperation cancelled.", 'red')
+ 
+
+
+
+
+
+
 
 # @click.command()
 # @click.option('--logs', is_flag=True, help="Follow logs immediately after starting services.")

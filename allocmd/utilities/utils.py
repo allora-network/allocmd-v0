@@ -100,16 +100,16 @@ def print_allora_banner():
     """
     cprint(banner_text, 'blue', attrs=['bold'])
 
-def generate_all_files(env: Environment, file_configs, command: Command, worker_name = ''):
+def generate_all_files(env: Environment, file_configs, command: Command, name = ''):
     if command == Command.INIT:
-        cprint(f"Bootstraping '{worker_name}' directory...", 'cyan')
+        cprint(f"Bootstraping '{name}' directory...", 'cyan')
         time.sleep(1) 
 
     for config in file_configs:
         template = env.get_template(config["template_name"])
 
         if command == Command.INIT:
-            file_path = os.path.join(os.getcwd(), f'{worker_name}/{config["file_name"]}')
+            file_path = os.path.join(os.getcwd(), f'{name}/{config["file_name"]}')
         elif command == Command.DEPLOY: 
             file_path = os.path.join(os.getcwd(), f'{config["file_name"]}')
 
@@ -416,3 +416,11 @@ def deployValidator(env: Environment):
             return
     else:
         print(colored('Operation cancelled.', 'magenta'))
+
+def check_docker_running():
+    """Check if Docker daemon is running."""
+    try:
+        subprocess.run(['docker', 'info'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
