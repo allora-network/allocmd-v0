@@ -17,11 +17,17 @@ def cli():
     """A CLI Tool that handles creation of an Allora Worker Node"""
     pass
 
+@cli.group()
+def generate():
+    """generate scaffolded files and directories depending on the type passed."""
+    pass
+
+@generate.command()
 @click.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
 @click.option('--name', required=False, help='Name of the worker.')
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
-def init(environment, name=None, topic=None):
+def worker(environment, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
     if environment == 'dev':
