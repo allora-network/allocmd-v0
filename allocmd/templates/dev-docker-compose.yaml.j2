@@ -1,17 +1,17 @@
 version: "3.8"
 services:
-  worker:
-    container_name: worker
+  {{ b7s_type }}:
+    container_name: {{ b7s_type }}
     build: .
     command: 
       - allora-node
       - --role=worker
-      - --peer-db=/data/worker/peer-database
-      - --function-db=/data/worker/function-database
+      - --peer-db=/data/{{ b7s_type }}/peer-database
+      - --function-db=/data/{{ b7s_type }}/function-database
       - --runtime-path=/app/runtime
       - --runtime-cli=bls-runtime
-      - --workspace=/data/worker/workspace
-      - --private-key=/data/worker/key/priv.bin
+      - --workspace=/data/{{ b7s_type }}/workspace
+      - --private-key=/data/{{ b7s_type }}/key/priv.bin
       - --log-level=debug
       - --port=9011
       - --topic={{ topic_id }}
@@ -27,7 +27,7 @@ services:
     networks:
       b7s-local:
         aliases:
-          - worker
+          - {{ b7s_type }}
         ipv4_address: 172.19.0.5
 
   head:

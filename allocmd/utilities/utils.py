@@ -6,11 +6,11 @@ from importlib.resources import files
 from termcolor import colored, cprint
 import time
 import shutil 
-from .typings import Command
+from .typings import Command, BlocklessNodeType
 import re
 import yaml
 
-def create_worker_account(worker_name, faucet_url, type='worker'):
+def create_worker_account(worker_name, faucet_url, type:BlocklessNodeType):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     cli_tool_dir = os.path.dirname(current_file_dir)
     allora_chain_dir = os.path.join(cli_tool_dir, 'allora-chain')
@@ -78,7 +78,7 @@ def create_worker_account(worker_name, faucet_url, type='worker'):
                         f'{faucet_url}/send/testnet/{address}'
                     ], stdout=subprocess.DEVNULL)
         
-        print(colored(f"keys created and testnet-funded for this worker. please check config.yaml for your address and mnemonic", "green"))
+        print(colored(f"keys created and testnet-funded for this {type}. please check config.yaml for your address and mnemonic", "green"))
         return mnemonic, hex_coded_pk, address
     else:
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
@@ -120,23 +120,23 @@ def generate_all_files(env: Environment, file_configs, command: Command, name = 
     if command == Command.INIT:
         cprint("\nAll files bootstrapped successfully. ALLORA!!!", 'green', attrs=['bold'])
 
-def run_key_generate_command(worker_name):
+def run_key_generate_command(worker_name, type:BlocklessNodeType):
     command = (
         f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/data":/data '
         'alloranetwork/allora-inference-base:latest '
-        '-c "mkdir -p /data/head/key /data/worker/key && (cd /data/head/key && allora-keys) && (cd /data/worker/key && allora-keys)"'
+        f'-c "mkdir -p /data/head/key /data/{type}/key && (cd /data/head/key && allora-keys) && (cd /data/{type}/key && allora-keys)"'
     )
     try:
         subprocess.run(command, shell=True, check=True)
         peer_id_path = os.path.join(os.getcwd(), f'{worker_name}/data/head/key', 'identity')
         with open(peer_id_path, 'r') as file:
-            cprint(f"local workers identity generated successfully.", 'cyan')
+            cprint(f"local {type} identity generated successfully.", 'cyan')
             head_peer_id = file.read().strip()
             return head_peer_id
     except subprocess.CalledProcessError as e:
-        click.echo(f"error generating local workers identity: {e}", err=True)
+        click.echo(f"error generating local {type} identity: {e}", err=True)
 
-def generateWorkerAccount(worker_name):
+def generateWorkerAccount(worker_name, type:BlocklessNodeType):
     config_path = os.path.join(os.getcwd(), worker_name, 'config.yaml')
     try:
         with open(config_path, 'r') as file:
@@ -148,7 +148,7 @@ def generateWorkerAccount(worker_name):
     worker_name = config['name']
     faucet_url = config['faucet_url']
     account_details = None
-    if not config['worker']['mnemonic'] or not config['worker']['hex_coded_pk'] or not config['worker']['address']:
+    if not config[type]['mnemonic'] or not config[type]['hex_coded_pk'] or not config[type]['address']:
         account_details = create_worker_account(worker_name, faucet_url, 'worker')
 
     mnemonic = account_details[0] if account_details else config['worker']['mnemonic']
@@ -162,11 +162,10 @@ def generateWorkerAccount(worker_name):
         with open(config_path, 'w') as file:
             yaml.safe_dump(config, file)
 
-def generateProdCompose(env: Environment):
+def generateProdCompose(env: Environment, type:BlocklessNodeType):
     """Deploy resource production kubernetes cluster"""
 
     subprocess.run("mkdir -p ./data/scripts", shell=True, check=True)
-    # subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True)
 
     try:
         result = subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True, capture_output=True, text=True)
@@ -185,10 +184,10 @@ def generateProdCompose(env: Environment):
         return
 
     worker_name = config['name']
-    hex_coded_pk = config['worker']['hex_coded_pk']
-    boot_nodes = config['worker']['boot_nodes']
-    chain_rpc_address = config['worker']['chain_rpc_address']
-    chain_topic_id = config['worker']['chain_topic_id']
+    hex_coded_pk = config[type]['hex_coded_pk']
+    boot_nodes = config[type]['boot_nodes']
+    chain_rpc_address = config[type]['chain_rpc_address']
+    chain_topic_id = config[type]['chain_topic_id']
 
     file_configs = [
         {
@@ -214,6 +213,91 @@ def generateProdCompose(env: Environment):
     generate_all_files(env, file_configs, Command.DEPLOY)
     cprint(f"production docker compose file generated to be deployed", 'green')
     cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
+
+
+def blocklessNode(environment, env, type:BlocklessNodeType, name=None, topic=None):
+    """Initialize your Allora Worker Node with necessary boilerplates"""
+
+    if not check_docker_running():
+        cprint("Docker is not running on your machine, please start docker before running this command", 'red')
+        return
+    
+    if environment == 'dev':
+        if topic is None:
+            cprint(f"You must provide topic id when generating {type} in development", 'red')
+            return
+        elif name is None:
+            cprint(f"You must provide name when generating {type} in development", 'red')
+            return
+
+        print_allora_banner()
+        cprint("Welcome to the Allora CLI!", 'green', attrs=['bold'])
+        print(colored(f"Allora CLI assists in the seamless creation and deployment of Allora {type} nodes", 'yellow'))
+        cprint(f"\nThis command will generate some files in the directory named '{name}'.", 'cyan')
+        
+        if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
+            cprint(f"\nProceeding with the creation of {type} node directory...", 'green')
+
+            head_peer_id = run_key_generate_command(name, type)
+
+            file_configs = [
+                {
+                    "template_name": "Dockerfile.j2",
+                    "file_name": "Dockerfile",
+                    "context": {}
+                },
+                {
+                    "template_name": "main.py.j2",
+                    "file_name": "main.py",
+                    "context": {}
+                },
+                {
+                    "template_name": "dev-docker-compose.yaml.j2",
+                    "file_name": "dev-docker-compose.yaml",
+                    "context": {"head_peer_id": head_peer_id, "topic_id": topic, "b7s_type": type}
+                },
+                {
+                    "template_name": "requirements.txt.j2",
+                    "file_name": "requirements.txt",
+                    "context": {}
+                },
+                {
+                    "template_name": "gitignore.j2",
+                    "file_name": ".gitignore",
+                    "context": {}
+                },
+                {
+                    "template_name": "env.j2",
+                    "file_name": ".env",
+                    "context": {}
+                },
+                {
+                    "template_name": "config.yaml.j2",
+                    "file_name": "config.yaml",
+                    "context": {"name": name, "topic_id": topic, "b7s_type": type}
+                }
+            ]
+
+            generate_all_files(env, file_configs, Command.INIT, name)
+
+            generateWorkerAccount(name, type)
+        else:
+            cprint("\nOperation cancelled.", 'red')
+    elif environment == 'prod':
+        devComposePath = os.path.join(os.getcwd(), 'dev-docker-compose.yaml')
+        if not os.path.exists(devComposePath):
+            cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> and then run the prod generate in the directory created", 'red')
+        else:
+            generateProdCompose(env)
+
+
+
+
+
+
+
+
+
 
 def deployWorker(env: Environment):
     """Deploy resource production kubernetes cluster"""

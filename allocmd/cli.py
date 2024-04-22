@@ -4,8 +4,8 @@ import subprocess
 from jinja2 import Environment, FileSystemLoader
 from importlib.resources import files
 from termcolor import colored, cprint
-from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose, check_docker_running
-from .utilities.typings import Command
+from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose, check_docker_running, blocklessNode
+from .utilities.typings import Command, BlocklessNodeType
 from .utilities.constants import cliVersion
 
 template_path = files('allocmd').joinpath('templates')
@@ -26,82 +26,20 @@ def generate():
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
 @click.option('--name', required=False, help='Name of the worker.')
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
-def worker(environment, name=None, topic=None):
+def worker(environment, type= BlocklessNodeType.worker, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
-    if not check_docker_running():
-        cprint("Docker is not running on your machine, please start docker before running this command", 'red')
-        return
+    blocklessNode(environment, env, type, name, topic)
 
-    if environment == 'dev':
-        if topic is None:
-            cprint("You must provide topic id when running development init.", 'red')
-            return
-        elif name is None:
-            cprint("You must provide name when running development init.", 'red')
-            return
+@generate.command()
+@click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
+@click.option('--name', required=False, help='Name of the reputer.')
+@click.option('--topic', required=False, type=int, help='The topic ID the reputer is registered with.')
+def reputer(environment, type= BlocklessNodeType.reputer, name=None, topic=None):
+    """Initialize your Allora Reputer Node with necessary boilerplates"""
 
+    blocklessNode(environment, env, type, name, topic)
 
-        print_allora_banner()
-        cprint("Welcome to the Allora CLI!", 'green', attrs=['bold'])
-        print(colored("Allora CLI assists in the seamless creation and deployment of Allora worker nodes", 'yellow'))
-        print(colored("to provide model inference to the Allora Chain.", 'yellow'))
-        cprint(f"\nThis command will generate some files in the directory named '{name}'.", 'cyan')
-        
-        if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
-            cprint("\nProceeding with the creation of worker node directory...", 'green')
-
-            head_peer_id = run_key_generate_command(name)
-
-            file_configs = [
-                {
-                    "template_name": "Dockerfile.j2",
-                    "file_name": "Dockerfile",
-                    "context": {}
-                },
-                {
-                    "template_name": "main.py.j2",
-                    "file_name": "main.py",
-                    "context": {}
-                },
-                {
-                    "template_name": "dev-docker-compose.yaml.j2",
-                    "file_name": "dev-docker-compose.yaml",
-                    "context": {"head_peer_id": head_peer_id, "topic_id": topic}
-                },
-                {
-                    "template_name": "requirements.txt.j2",
-                    "file_name": "requirements.txt",
-                    "context": {}
-                },
-                {
-                    "template_name": "gitignore.j2",
-                    "file_name": ".gitignore",
-                    "context": {}
-                },
-                {
-                    "template_name": "env.j2",
-                    "file_name": ".env",
-                    "context": {}
-                },
-                {
-                    "template_name": "config.yaml.j2",
-                    "file_name": "config.yaml",
-                    "context": {"name": name, "topic_id": topic}
-                }
-            ]
-
-            generate_all_files(env, file_configs, Command.INIT, name)
-
-            generateWorkerAccount(name)
-        else:
-            cprint("\nOperation cancelled.", 'red')
-    elif environment == 'prod':
-        devComposePath = os.path.join(os.getcwd(), 'dev-docker-compose.yaml')
-        if not os.path.exists(devComposePath):
-            cprint("You must initialize the worker on dev please run allocmd init --env dev --name <worker name> --topic <topic id> and then run the prod init in the directory created", 'red')
-        else:
-            generateProdCompose(env)
 
 @generate.command()
 @click.option('--name',required=True, help='Name of the validator.')
