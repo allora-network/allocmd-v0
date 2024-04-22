@@ -19,7 +19,7 @@ def cli():
 
 @cli.group()
 def generate():
-    """generate scaffolded files and directories depending on the type passed."""
+    """generate scaffolded files and directories depending on the command type passed."""
     pass
 
 @generate.command()

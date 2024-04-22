@@ -22,7 +22,7 @@ pip install allocmd
 The next step is initializing the CLI to bootstrap all the needed components to get your worker running. The following command will handle the initialization process. It will create all the files in the appropriate directories and generate identities for your node to be used for local development.
 
 ```shell
-allocmd init --name <preffered name> --topic <topic id> --env dev
+allocmd generate worker --name <preffered name> --topic <topic id> --env dev
 ```
 
 Before running this command you will have to [pick the topic Id ](https://docs.allora.network/docs/existing-allora-appchain-topics)you wish to generate inference for after which you can run this command with the topic Id. The command will auto-create some files, the most important of which is the `dev-docker-compose.yaml`file which is an already complete docker-compose that you can run immediately to see your worker and head nodes running perfectly on your local machine. You can edit the files as you wish. for instance the `main.py` is meant for you to call your inference server, hence you will have to edit the sample code with actual URLs and logic as you prefer.
@@ -61,7 +61,7 @@ The `<TOPIC_ID>` needs to be [an existing topic on the chain](https://docs.allor
 Your worker node is now ready to be deployed, the `main.py` has been modified, all env variables passed, and the worker node is running locally and you are now ready to deploy your worker to run in the production environment. The following command will handle the generation of the `prod-docker-compose.yaml` file which contains all the keys and parameters needed for your worker to function perfectly in production.
 
 ```shell
-allocmd init --env prod
+allocmd generate worker --env prod
 ```
 
 By running this command, `prod-docker-compose.yaml` will be generated with appropriate keys and parameters. You can now run the docker-compose file or deploy the whole codebase in your preferred cloud instance. At this stage, your worker should be responding to inference request from the Allora Chain.
