@@ -149,16 +149,16 @@ def generateWorkerAccount(worker_name, type):
     faucet_url = config['faucet_url']
     account_details = None
     if not config[type]['mnemonic'] or not config[type]['hex_coded_pk'] or not config[type]['address']:
-        account_details = create_worker_account(worker_name, faucet_url, 'worker')
+        account_details = create_worker_account(worker_name, faucet_url, type)
 
-    mnemonic = account_details[0] if account_details else config['worker']['mnemonic']
-    hex_coded_pk = account_details[1] if account_details else config['worker']['hex_coded_pk']
-    address = account_details[2] if account_details else config['worker']['address']
+    mnemonic = account_details[0] if account_details else config[type]['mnemonic']
+    hex_coded_pk = account_details[1] if account_details else config[type]['hex_coded_pk']
+    address = account_details[2] if account_details else config[type]['address']
 
-    if not config['worker']['mnemonic'] or not config['worker']['hex_coded_pk'] or not config['worker']['address']:
-        config['worker']['mnemonic'] = mnemonic
-        config['worker']['hex_coded_pk'] = hex_coded_pk
-        config['worker']['address'] = address
+    if not config[type]['mnemonic'] or not config[type]['hex_coded_pk'] or not config[type]['address']:
+        config[type]['mnemonic'] = mnemonic
+        config[type]['hex_coded_pk'] = hex_coded_pk
+        config[type]['address'] = address
         with open(config_path, 'w') as file:
             yaml.safe_dump(config, file)
 
