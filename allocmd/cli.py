@@ -29,7 +29,7 @@ def generate():
 def worker(environment, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
-    blocklessNode(environment, env, BlocklessNodeType.worker, name, topic)
+    blocklessNode(environment, env, BlocklessNodeType.worker.name, name, topic)
 
 @generate.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
@@ -38,7 +38,7 @@ def worker(environment, name=None, topic=None):
 def reputer(environment, name=None, topic=None):
     """Initialize your Allora Reputer Node with necessary boilerplates"""
 
-    blocklessNode(environment, env, BlocklessNodeType.reputer, name, topic)
+    blocklessNode(environment, env, BlocklessNodeType.reputer.name, name, topic)
 
 
 @generate.command()

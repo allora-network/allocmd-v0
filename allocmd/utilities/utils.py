@@ -10,7 +10,7 @@ from .typings import Command, BlocklessNodeType
 import re
 import yaml
 
-def create_worker_account(worker_name, faucet_url, type:BlocklessNodeType):
+def create_worker_account(worker_name, faucet_url, type):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     cli_tool_dir = os.path.dirname(current_file_dir)
     allora_chain_dir = os.path.join(cli_tool_dir, 'allora-chain')
@@ -120,7 +120,7 @@ def generate_all_files(env: Environment, file_configs, command: Command, name = 
     if command == Command.INIT:
         cprint("\nAll files bootstrapped successfully. ALLORA!!!", 'green', attrs=['bold'])
 
-def run_key_generate_command(worker_name, type:BlocklessNodeType):
+def run_key_generate_command(worker_name, type):
     command = (
         f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/data":/data '
         'alloranetwork/allora-inference-base:latest '
@@ -136,7 +136,7 @@ def run_key_generate_command(worker_name, type:BlocklessNodeType):
     except subprocess.CalledProcessError as e:
         click.echo(f"error generating local {type} identity: {e}", err=True)
 
-def generateWorkerAccount(worker_name, type:BlocklessNodeType):
+def generateWorkerAccount(worker_name, type):
     config_path = os.path.join(os.getcwd(), worker_name, 'config.yaml')
     try:
         with open(config_path, 'r') as file:
@@ -162,7 +162,7 @@ def generateWorkerAccount(worker_name, type:BlocklessNodeType):
         with open(config_path, 'w') as file:
             yaml.safe_dump(config, file)
 
-def generateProdCompose(env: Environment, type:BlocklessNodeType):
+def generateProdCompose(env: Environment, type):
     """Deploy resource production kubernetes cluster"""
 
     subprocess.run("mkdir -p ./data/scripts", shell=True, check=True)
@@ -215,7 +215,7 @@ def generateProdCompose(env: Environment, type:BlocklessNodeType):
     cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
 
 
-def blocklessNode(environment, env, type:BlocklessNodeType, name=None, topic=None):
+def blocklessNode(environment, env, type, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
     if not check_docker_running():
@@ -288,7 +288,7 @@ def blocklessNode(environment, env, type:BlocklessNodeType, name=None, topic=Non
         if not os.path.exists(devComposePath):
             cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> and then run the prod generate in the directory created", 'red')
         else:
-            generateProdCompose(env)
+            generateProdCompose(env, type)
 
 
 
