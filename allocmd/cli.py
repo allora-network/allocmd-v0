@@ -59,7 +59,7 @@ def validator(name=None, network=None):
     if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
         cprint("\nProceeding with the creation of validator node directory...", 'green')
 
-        os.makedirs(f"{name}/scripts", exist_ok=True)
+        os.makedirs(f"{name}/validator/scripts", exist_ok=True)
 
         file_configs = [
             {
@@ -74,9 +74,9 @@ def validator(name=None, network=None):
             },
         ]
 
-        generate_all_files(env, file_configs, Command.INIT, name)
+        generate_all_files(env, file_configs, Command.INIT, "validator", name)
 
-        subprocess.run(['chmod', '+x', f'{name}/scripts/start-validator.sh'], check=True)
+        subprocess.run(['chmod', '+x', f'{name}/validator/scripts/start-validator.sh'], check=True)
     else:
         cprint("\nOperation cancelled.", 'red')
  

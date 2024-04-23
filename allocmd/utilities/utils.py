@@ -100,7 +100,7 @@ def print_allora_banner():
     """
     cprint(banner_text, 'blue', attrs=['bold'])
 
-def generate_all_files(env: Environment, file_configs, command: Command, name = ''):
+def generate_all_files(env: Environment, file_configs, command: Command, type, name = ''):
     if command == Command.INIT:
         cprint(f"Bootstraping '{name}' directory...", 'cyan')
         time.sleep(1) 
@@ -109,9 +109,9 @@ def generate_all_files(env: Environment, file_configs, command: Command, name = 
         template = env.get_template(config["template_name"])
 
         if command == Command.INIT:
-            file_path = os.path.join(os.getcwd(), f'{name}/{config["file_name"]}')
+            file_path = os.path.join(os.getcwd(), f'{name}/{type}/{config["file_name"]}')
         elif command == Command.DEPLOY: 
-            file_path = os.path.join(os.getcwd(), f'{config["file_name"]}')
+            file_path = os.path.join(os.getcwd(), f'{type}/{config["file_name"]}')
 
         content = template.render(**config["context"])
         with open(file_path, 'w') as f:
@@ -122,13 +122,13 @@ def generate_all_files(env: Environment, file_configs, command: Command, name = 
 
 def run_key_generate_command(worker_name, type):
     command = (
-        f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/data":/data '
+        f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/{type}/data":/data '
         'alloranetwork/allora-inference-base:latest '
-        f'-c "mkdir -p /data/head/key /data/{type}/key && (cd /data/head/key && allora-keys) && (cd /data/{type}/key && allora-keys)"'
+        f'-c "mkdir -p /{type}/data/head/key /{type}/data/{type}/key && (cd /{type}/data/head/key && allora-keys) && (cd /{type}/data/{type}/key && allora-keys)"'
     )
     try:
         subprocess.run(command, shell=True, check=True)
-        peer_id_path = os.path.join(os.getcwd(), f'{worker_name}/data/head/key', 'identity')
+        peer_id_path = os.path.join(os.getcwd(), f'{worker_name}/{type}/data/head/key', 'identity')
         with open(peer_id_path, 'r') as file:
             cprint(f"local {type} identity generated successfully.", 'cyan')
             head_peer_id = file.read().strip()
@@ -137,7 +137,7 @@ def run_key_generate_command(worker_name, type):
         click.echo(f"error generating local {type} identity: {e}", err=True)
 
 def generateWorkerAccount(worker_name, type):
-    config_path = os.path.join(os.getcwd(), worker_name, 'config.yaml')
+    config_path = os.path.join(os.getcwd(), worker_name, type, 'config.yaml')
     try:
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
@@ -165,54 +165,60 @@ def generateWorkerAccount(worker_name, type):
 def generateProdCompose(env: Environment, type):
     """Deploy resource production kubernetes cluster"""
 
-    subprocess.run("mkdir -p ./data/scripts", shell=True, check=True)
+    cprint(f"\nMake sure you are running this command in the appropriate directory [validator, reputer, worker]", 'cyan')
+    cprint(f"\nif not, please cd to the right directory", 'cyan')
+    if click.confirm(colored("\nif you are in the right folder, please proceed", 'white', attrs=['bold']), default=True):
 
-    try:
-        result = subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True, capture_output=True, text=True)
-        print(result)
-    except subprocess.CalledProcessError as e:
-        print(f"Command '{e.cmd}' returned non-zero exit status {e.returncode}.")
-        if e.stderr:
-            print(f"Stderr: {e.stderr}")
+        subprocess.run("mkdir -p ./data/scripts", shell=True, check=True)
 
-    config_path = os.path.join(os.getcwd(), 'config.yaml')
-    try:
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-    except yaml.YAMLError as e:
-        print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
-        return
+        try:
+            result = subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True, capture_output=True, text=True)
+            print(result)
+        except subprocess.CalledProcessError as e:
+            print(f"Command '{e.cmd}' returned non-zero exit status {e.returncode}.")
+            if e.stderr:
+                print(f"Stderr: {e.stderr}")
 
-    worker_name = config['name']
-    hex_coded_pk = config[type]['hex_coded_pk']
-    boot_nodes = config[type]['boot_nodes']
-    chain_rpc_address = config[type]['chain_rpc_address']
-    chain_topic_id = config[type]['chain_topic_id']
+        config_path = os.path.join(os.getcwd(), 'config.yaml')
+        try:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+        except yaml.YAMLError as e:
+            print(colored(f"Error reading config file: {e}", 'red', attrs=['bold']))
+            return
 
-    file_configs = [
-        {
-            "template_name": "prod-docker-compose.yaml.j2",
-            "file_name": "prod-docker-compose.yaml",
-            "context": {
-                "worker_name": worker_name, 
-                "boot_nodes": boot_nodes, 
-                "chain_rpc_address": chain_rpc_address, 
-                "topic_id": chain_topic_id, 
+        worker_name = config['name']
+        hex_coded_pk = config[type]['hex_coded_pk']
+        boot_nodes = config[type]['boot_nodes']
+        chain_rpc_address = config[type]['chain_rpc_address']
+        chain_topic_id = config[type]['chain_topic_id']
+
+        file_configs = [
+            {
+                "template_name": "prod-docker-compose.yaml.j2",
+                "file_name": "prod-docker-compose.yaml",
+                "context": {
+                    "worker_name": worker_name, 
+                    "boot_nodes": boot_nodes, 
+                    "chain_rpc_address": chain_rpc_address, 
+                    "topic_id": chain_topic_id, 
+                }
+            },
+            {
+                "template_name": "init.sh.j2",
+                "file_name": "data/scripts/init.sh",
+                "context": {
+                    "worker_name": worker_name, 
+                    "hex_coded_pk": hex_coded_pk
+                }
             }
-        },
-        {
-            "template_name": "init.sh.j2",
-            "file_name": "data/scripts/init.sh",
-            "context": {
-                "worker_name": worker_name, 
-                "hex_coded_pk": hex_coded_pk
-            }
-        }
-    ]
+        ]
 
-    generate_all_files(env, file_configs, Command.DEPLOY)
-    cprint(f"production docker compose file generated to be deployed", 'green')
-    cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
+        generate_all_files(env, file_configs, Command.DEPLOY)
+        cprint(f"production docker compose file generated to be deployed", 'green')
+        # cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
+    else:
+        cprint("\nOperation cancelled.", 'red')
 
 
 def blocklessNode(environment, env, type, name=None, topic=None):
@@ -284,7 +290,7 @@ def blocklessNode(environment, env, type, name=None, topic=None):
         else:
             cprint("\nOperation cancelled.", 'red')
     elif environment == 'prod':
-        devComposePath = os.path.join(os.getcwd(), 'dev-docker-compose.yaml')
+        devComposePath = os.path.join(os.getcwd(), type, 'dev-docker-compose.yaml')
         if not os.path.exists(devComposePath):
             cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> and then run the prod generate in the directory created", 'red')
         else:
