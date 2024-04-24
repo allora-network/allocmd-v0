@@ -111,7 +111,7 @@ def generate_all_files(env: Environment, file_configs, command: Command, type, n
         if command == Command.INIT:
             file_path = os.path.join(os.getcwd(), f'{name}/{type}/{config["file_name"]}')
         elif command == Command.DEPLOY: 
-            file_path = os.path.join(os.getcwd(), f'{type}/{config["file_name"]}')
+            file_path = os.path.join(os.getcwd(), f'{config["file_name"]}')
 
         content = template.render(**config["context"])
         with open(file_path, 'w') as f:
