@@ -214,7 +214,7 @@ def generateProdCompose(env: Environment, type):
             }
         ]
 
-        generate_all_files(env, file_configs, Command.DEPLOY)
+        generate_all_files(env, file_configs, Command.DEPLOY, type)
         cprint(f"production docker compose file generated to be deployed", 'green')
         # cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
     else:
