@@ -284,7 +284,7 @@ def blocklessNode(environment, env, type, name=None, topic=None):
                 }
             ]
 
-            generate_all_files(env, file_configs, Command.INIT, name)
+            generate_all_files(env, file_configs, Command.INIT, type, name)
 
             generateWorkerAccount(name, type)
         else:
