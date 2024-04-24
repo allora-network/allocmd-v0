@@ -124,7 +124,7 @@ def run_key_generate_command(worker_name, type):
     command = (
         f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/{type}/data":/data '
         'alloranetwork/allora-inference-base:latest '
-        f'-c "mkdir -p /{type}/data/head/key /{type}/data/{type}/key && (cd /{type}/data/head/key && allora-keys) && (cd /{type}/data/{type}/key && allora-keys)"'
+        f'-c "mkdir -p /data/head/key /data/{type}/key && (cd /data/head/key && allora-keys) && (cd /data/{type}/key && allora-keys)"'
     )
     try:
         subprocess.run(command, shell=True, check=True)
