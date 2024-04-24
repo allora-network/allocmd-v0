@@ -74,8 +74,8 @@ def create_worker_account(worker_name, faucet_url, type, network="testnet"):
 
         subprocess.run([
                         'curl',
-                        '-Lvvv',
-                        f'{faucet_url}/send/{network}/{address}'
+                        '-L',
+                        f'{faucet_url}send/{network}/{address}'
                     ], stdout=subprocess.DEVNULL)
         
         print(colored(f"keys created and {network}-funded for this {type}. please check config.yaml for your address and mnemonic", "green"))
@@ -88,8 +88,8 @@ def fundAddress(faucet_url, address, network="testnet"):
     try:
         subprocess.run([
                         'curl',
-                        '-Lvvv',
-                        f'{faucet_url}/send/{network}/{address}'
+                        '-L',
+                        f'{faucet_url}send/{network}/{address}'
                     ], stdout=subprocess.DEVNULL)
         
         print(colored(f"address funded with {network}-faucet", "green"))
