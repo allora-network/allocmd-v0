@@ -290,7 +290,7 @@ def blocklessNode(environment, env, type, name=None, topic=None):
         else:
             cprint("\nOperation cancelled.", 'red')
     elif environment == 'prod':
-        devComposePath = os.path.join(os.getcwd(), type, 'dev-docker-compose.yaml')
+        devComposePath = os.path.join(os.getcwd(), 'dev-docker-compose.yaml')
         if not os.path.exists(devComposePath):
             cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> and then run the prod generate in the directory created", 'red')
         else:
