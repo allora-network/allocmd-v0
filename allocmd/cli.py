@@ -4,7 +4,7 @@ import subprocess
 from jinja2 import Environment, FileSystemLoader
 from importlib.resources import files
 from termcolor import colored, cprint
-from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose, check_docker_running, blocklessNode
+from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose, check_docker_running, blocklessNode, fundAddress
 from .utilities.typings import Command, BlocklessNodeType
 from .utilities.constants import cliVersion
 
@@ -79,9 +79,19 @@ def validator(name=None, network=None):
         subprocess.run(['chmod', '+x', f'{name}/validator/scripts/start-validator.sh'], check=True)
     else:
         cprint("\nOperation cancelled.", 'red')
- 
 
+@click.command()
+@click.option('--address',required=True, help='the account address to be funded.')
+@click.option('--network', required=True, type=click.Choice(['testnet', 'edgenet']), help='Your preffered chain network to fund address from.')
+def fund(address=None, network=None):
+    """fund allora account address"""
 
+    cprint(f"\nfunding allora address: {address}", 'green')
+    cprint(f"Funding account with {network} tokens", 'green')
+    faucet_url = f'https://faucet.{network}.allora.network/'
+    fundAddress(faucet_url, address, network)
+
+cli.add_command(fund)
 
 
 

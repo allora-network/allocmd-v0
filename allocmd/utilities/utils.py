@@ -10,7 +10,7 @@ from .typings import Command, BlocklessNodeType
 import re
 import yaml
 
-def create_worker_account(worker_name, faucet_url, type):
+def create_worker_account(worker_name, faucet_url, type, network="testnet"):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     cli_tool_dir = os.path.dirname(current_file_dir)
     allora_chain_dir = os.path.join(cli_tool_dir, 'allora-chain')
@@ -75,14 +75,27 @@ def create_worker_account(worker_name, faucet_url, type):
         subprocess.run([
                         'curl',
                         '-Lvvv',
-                        f'{faucet_url}/send/testnet/{address}'
+                        f'{faucet_url}/send/{network}/{address}'
                     ], stdout=subprocess.DEVNULL)
         
-        print(colored(f"keys created and testnet-funded for this {type}. please check config.yaml for your address and mnemonic", "green"))
+        print(colored(f"keys created and {network}-funded for this {type}. please check config.yaml for your address and mnemonic", "green"))
         return mnemonic, hex_coded_pk, address
     else:
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
         return ''
+
+def fundAddress(faucet_url, address, network="testnet"):
+    try:
+        subprocess.run([
+                        'curl',
+                        '-Lvvv',
+                        f'{faucet_url}/send/{network}/{address}'
+                    ], stdout=subprocess.DEVNULL)
+        
+        print(colored(f"address funded with {network}-faucet", "green"))
+        return address
+    except subprocess.CalledProcessError as e:
+        click.echo(f"error funding address: {e}", err=True)
 
 def print_allora_banner():
     """Prints an ASCII art styled banner for ALLORA."""
@@ -173,7 +186,6 @@ def generateProdCompose(env: Environment, type):
 
         try:
             result = subprocess.run("chmod -R +rx ./data/scripts", shell=True, check=True, capture_output=True, text=True)
-            print(result)
         except subprocess.CalledProcessError as e:
             print(f"Command '{e.cmd}' returned non-zero exit status {e.returncode}.")
             if e.stderr:
@@ -216,7 +228,7 @@ def generateProdCompose(env: Environment, type):
 
         generate_all_files(env, file_configs, Command.DEPLOY, type)
         cprint(f"production docker compose file generated to be deployed", 'green')
-        # cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
+        cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
     else:
         cprint("\nOperation cancelled.", 'red')
 
