@@ -122,7 +122,7 @@ def generate_all_files(env: Environment, file_configs, command: Command, worker_
 
 def run_key_generate_command(worker_name):
     command = (
-        f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/data":/data '
+        f'docker run -it --entrypoint=bash -v "$(pwd)/{worker_name}/data":/data --user root '
         'alloranetwork/allora-inference-base:latest '
         '-c "mkdir -p /data/head/key /data/worker/key && (cd /data/head/key && allora-keys) && (cd /data/worker/key && allora-keys)"'
     )
