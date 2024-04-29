@@ -34,13 +34,11 @@ def create_worker_account(worker_name, faucet_url, type='worker'):
         print(f"allora-chain directory: {allora_chain_dir}")
         subprocess.run(['make', 'install'], 
                         cwd=allora_chain_dir, 
-                        check=True,
-                        stdout=subprocess.DEVNULL)
+                        check=True)
         subprocess.run(['make', 'init'], 
                         cwd=allora_chain_dir,
                         env=env, 
-                        check=True,
-                        stdout=subprocess.DEVNULL)
+                        check=True)
 
         key_path = os.path.join(os.getcwd(), f'{worker_name}.{type}.key')
         with open(key_path, 'w') as file:
