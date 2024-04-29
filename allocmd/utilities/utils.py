@@ -31,17 +31,16 @@ def create_worker_account(worker_name, faucet_url, type='worker'):
         new_path = os.environ['PATH'] + os.pathsep + os.path.join(gopath, 'bin')
         env = os.environ.copy()
         env['PATH'] = new_path
+        print(f"allora-chain directory: {allora_chain_dir}")
         subprocess.run(['make', 'install'], 
                         cwd=allora_chain_dir, 
                         check=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL)
+                        stdout=subprocess.DEVNULL)
         subprocess.run(['make', 'init'], 
                         cwd=allora_chain_dir,
                         env=env, 
                         check=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL)
+                        stdout=subprocess.DEVNULL)
 
         key_path = os.path.join(os.getcwd(), f'{worker_name}.{type}.key')
         with open(key_path, 'w') as file:
