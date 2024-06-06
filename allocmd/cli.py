@@ -4,8 +4,8 @@ import subprocess
 from jinja2 import Environment, FileSystemLoader
 from importlib.resources import files
 from termcolor import colored, cprint
-from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose
-from .utilities.typings import Command
+from .utilities.utils import generate_all_files, print_allora_banner, run_key_generate_command, deployWorker, deployValidator, generateWorkerAccount, generateProdCompose, check_docker_running, blocklessNode, fundAddress
+from .utilities.typings import Command, BlocklessNodeType
 from .utilities.constants import cliVersion
 
 template_path = files('allocmd').joinpath('templates')
@@ -17,82 +17,85 @@ def cli():
     """A CLI Tool that handles creation of an Allora Worker Node"""
     pass
 
-@click.command()
+@cli.group()
+def generate():
+    """generate scaffolded files and directories depending on the command type passed."""
+    pass
+
+@generate.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
 @click.option('--name', required=False, help='Name of the worker.')
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
-def init(environment, name=None, topic=None):
+def worker(environment, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
-    if environment == 'dev':
-        if topic is None:
-            cprint("You must provide topic id when running development init.", 'red')
-            return
-        elif name is None:
-            cprint("You must provide name when running development init.", 'red')
-            return
+    blocklessNode(environment, env, BlocklessNodeType.worker.name, name, topic)
+
+@generate.command()
+@click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
+@click.option('--name', required=False, help='Name of the reputer.')
+@click.option('--topic', required=False, type=int, help='The topic ID the reputer is registered with.')
+def reputer(environment, name=None, topic=None):
+    """Initialize your Allora Reputer Node with necessary boilerplates"""
+
+    blocklessNode(environment, env, BlocklessNodeType.reputer.name, name, topic)
 
 
-        print_allora_banner()
-        cprint("Welcome to the Allora CLI!", 'green', attrs=['bold'])
-        print(colored("Allora CLI assists in the seamless creation and deployment of Allora worker nodes", 'yellow'))
-        print(colored("to provide model inference to the Allora Chain.", 'yellow'))
-        cprint(f"\nThis command will generate some files in the directory named '{name}'.", 'cyan')
-        
-        if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
-            cprint("\nProceeding with the creation of worker node directory...", 'green')
+@generate.command()
+@click.option('--name',required=True, help='Name of the validator.')
+@click.option('--network', required=True, type=click.Choice(['testnet', 'edgenet']), help='Your preffered chain network to run the validator on.')
+def validator(name=None, network=None):
+    """Initialize your Allora Worker Node with necessary boilerplates"""
 
-            head_peer_id = run_key_generate_command(name)
+    if not check_docker_running():
+        cprint("Docker is not running, please start docker before running this command", 'red')
+        return
 
-            file_configs = [
-                {
-                    "template_name": "Dockerfile.j2",
-                    "file_name": "Dockerfile",
-                    "context": {}
-                },
-                {
-                    "template_name": "main.py.j2",
-                    "file_name": "main.py",
-                    "context": {}
-                },
-                {
-                    "template_name": "dev-docker-compose.yaml.j2",
-                    "file_name": "dev-docker-compose.yaml",
-                    "context": {"head_peer_id": head_peer_id, "topic_id": topic}
-                },
-                {
-                    "template_name": "requirements.txt.j2",
-                    "file_name": "requirements.txt",
-                    "context": {}
-                },
-                {
-                    "template_name": "gitignore.j2",
-                    "file_name": ".gitignore",
-                    "context": {}
-                },
-                {
-                    "template_name": "env.j2",
-                    "file_name": ".env",
-                    "context": {}
-                },
-                {
-                    "template_name": "config.yaml.j2",
-                    "file_name": "config.yaml",
-                    "context": {"name": name, "topic_id": topic}
-                }
-            ]
+    print_allora_banner()
+    cprint("Welcome to the Allora CLI!", 'green', attrs=['bold'])
+    print(colored("Allora CLI assists in the seamless creation and deployment of Allora validator nodes", 'yellow'))
+    cprint(f"\nThis command will generate some files in the directory named '{name}'.", 'cyan')
+    
+    if click.confirm(colored("\nWould you like to proceed?", 'white', attrs=['bold']), default=True):
+        cprint("\nProceeding with the creation of validator node directory...", 'green')
 
-            generate_all_files(env, file_configs, Command.INIT, name)
+        os.makedirs(f"{name}/validator/scripts", exist_ok=True)
 
-            generateWorkerAccount(name)
-        else:
-            cprint("\nOperation cancelled.", 'red')
-    elif environment == 'prod':
-        devComposePath = os.path.join(os.getcwd(), 'dev-docker-compose.yaml')
-        if not os.path.exists(devComposePath):
-            cprint("You must initialize the worker on dev please run allocmd init --env dev --name <worker name> --topic <topic id> and then run the prod init in the directory created", 'red')
-        else:
-            generateProdCompose(env)
+        file_configs = [
+            {
+                "template_name": "validator-docker-compose.yaml.j2",
+                "file_name": "validator-docker-compose.yaml",
+                "context": {"val_name": name, "network": network}
+            },
+            {
+                "template_name": "start-validator.sh.j2",
+                "file_name": "scripts/start-validator.sh",
+                "context": {"val_name": name, "network": network}
+            },
+        ]
+
+        generate_all_files(env, file_configs, Command.INIT, "validator", name)
+
+        subprocess.run(['chmod', '+x', f'{name}/validator/scripts/start-validator.sh'], check=True)
+    else:
+        cprint("\nOperation cancelled.", 'red')
+
+@click.command()
+@click.option('--address',required=True, help='the account address to be funded.')
+@click.option('--network', required=True, type=click.Choice(['testnet', 'edgenet']), help='Your preffered chain network to fund address from.')
+def fund(address=None, network=None):
+    """fund allora account address"""
+
+    cprint(f"\nfunding allora address: {address}", 'green')
+    cprint(f"Funding account with {network} tokens", 'green')
+    faucet_url = f'https://faucet.{network}.allora.network/'
+    fundAddress(faucet_url, address, network)
+
+cli.add_command(fund)
+
+
+
+
 
 # @click.command()
 # @click.option('--logs', is_flag=True, help="Follow logs immediately after starting services.")
@@ -165,7 +168,7 @@ def deploy(type_):
 
 
     
-cli.add_command(init)
+# cli.add_command(init)
 # cli.add_command(run)
 # cli.add_command(terminate)
 # cli.add_command(deploy)

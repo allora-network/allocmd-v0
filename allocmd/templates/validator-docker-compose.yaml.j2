@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  validator0:
+    container_name: {{ val_name }}
+    image: "alloranetwork/allora-chain:v0.0.10"
+    environment:
+      - NETWORK={{ network }}
+      - MONIKER={{ val_name }}
+      - APP_HOME=/data
+    volumes:
+      - ./data:/data
+      - ./scripts/:/scripts
+    ports:
+      - "26656-26657:26656-26657"
+    user: "0:0"
+    entrypoint: /scripts/start-validator.sh
