@@ -10,7 +10,7 @@ from .typings import Command, BlocklessNodeType
 import re
 import yaml
 
-def create_worker_account(worker_name, faucet_url, type, network="testnet"):
+def create_worker_account(worker_name, faucet_url, type, network="edgenet"):
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     cli_tool_dir = os.path.dirname(current_file_dir)
     allora_chain_dir = os.path.join(cli_tool_dir, 'allora-chain')
@@ -81,7 +81,7 @@ def create_worker_account(worker_name, faucet_url, type, network="testnet"):
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
         return ''
 
-def fundAddress(faucet_url, address, network="testnet"):
+def fundAddress(faucet_url, address, network="edgenet"):
     try:
         subprocess.run([
                         'curl',

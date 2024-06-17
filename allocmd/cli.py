@@ -43,7 +43,7 @@ def reputer(environment, name=None, topic=None):
 
 @generate.command()
 @click.option('--name',required=True, help='Name of the validator.')
-@click.option('--network', required=True, type=click.Choice(['testnet', 'edgenet']), help='Your preffered chain network to run the validator on.')
+@click.option('--network', required=True, type=click.Choice(['edgenet']), help='Your preffered chain network to run the validator on.')
 def validator(name=None, network=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
@@ -82,7 +82,7 @@ def validator(name=None, network=None):
 
 @click.command()
 @click.option('--address',required=True, help='the account address to be funded.')
-@click.option('--network', required=True, type=click.Choice(['testnet', 'edgenet']), help='Your preffered chain network to fund address from.')
+@click.option('--network', required=True, type=click.Choice(['edgenet']), help='Your preffered chain network to fund address from.')
 def fund(address=None, network=None):
     """fund allora account address"""
 

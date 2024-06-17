@@ -9,7 +9,7 @@ The following are the list of stuff that can don with this tool at the moment
 1. Generating worker node files
 2. Genrating reputer node files
 3. Generating validator node files
-4. Funding of testnet account addresses
+4. Funding of edgenet account addresses
 
 for all the files generation commands, the tool will help in generation of the needed files and their respective docker files and you can spin them up as usual docker containers with docker-compose
 
@@ -76,7 +76,7 @@ By running this command, `prod-docker-compose.yaml` will be generated with appro
 
 ### Initialize validator production
 ```shell
-allocmd generate validator --name <validator-name> --network <testnet or mainnet>
+allocmd generate validator --name <validator-name> --network <edgenet>
 ```
 The above command can generate validator files and you can then use docker-compose to deploy
 
