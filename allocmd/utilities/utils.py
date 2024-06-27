@@ -198,6 +198,13 @@ def generateProdCompose(env: Environment, type):
         chain_rpc_address = config[type]['chain_rpc_address']
         chain_topic_id = config[type]['chain_topic_id']
 
+
+        alloraTopic
+        if type == 'worker':
+            alloraTopic = f"allora-topic-{chain_topic_id}-worker"
+        elif type == 'reputer':
+            alloraTopic = f"allora-topic-{chain_topic_id}-reputer"
+
         file_configs = [
             {
                 "template_name": "prod-docker-compose.yaml.j2",
@@ -206,7 +213,7 @@ def generateProdCompose(env: Environment, type):
                     "worker_name": worker_name, 
                     "boot_nodes": boot_nodes, 
                     "chain_rpc_address": chain_rpc_address, 
-                    "topic_id": chain_topic_id, 
+                    "topic_id": alloraTopic, 
                 }
             },
             {
@@ -240,6 +247,12 @@ def blocklessNode(environment, env, type, name=None, topic=None):
         elif name is None:
             cprint(f"You must provide name when generating {type} in development", 'red')
             return
+        
+        alloraTopic
+        if type == 'worker':
+            alloraTopic = f"allora-topic-{topic}-worker"
+        elif type == 'reputer':
+            alloraTopic = f"allora-topic-{topic}-reputer"
 
         print_allora_banner()
         cprint("Welcome to the Allora CLI!", 'green', attrs=['bold'])
@@ -265,7 +278,7 @@ def blocklessNode(environment, env, type, name=None, topic=None):
                 {
                     "template_name": "dev-docker-compose.yaml.j2",
                     "file_name": "dev-docker-compose.yaml",
-                    "context": {"head_peer_id": head_peer_id, "topic_id": topic, "b7s_type": type}
+                    "context": {"head_peer_id": head_peer_id, "topic_id": alloraTopic, "b7s_type": type}
                 },
                 {
                     "template_name": "requirements.txt.j2",
