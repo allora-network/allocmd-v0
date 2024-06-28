@@ -199,7 +199,7 @@ def generateProdCompose(env: Environment, type):
         chain_topic_id = config[type]['chain_topic_id']
 
 
-        alloraTopic
+        alloraTopic = None
         if type == 'worker':
             alloraTopic = f"allora-topic-{chain_topic_id}-worker"
         elif type == 'reputer':
@@ -248,7 +248,7 @@ def blocklessNode(environment, env, type, name=None, topic=None):
             cprint(f"You must provide name when generating {type} in development", 'red')
             return
         
-        alloraTopic
+        alloraTopic = None
         if type == 'worker':
             alloraTopic = f"allora-topic-{topic}-worker"
         elif type == 'reputer':
