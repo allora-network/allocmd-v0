@@ -33,7 +33,7 @@ The next step is initializing the CLI to bootstrap all the needed components to 
 allocmd generate worker --name <preffered name> --topic <topic id> --env dev
 ```
 
-Before running this command you will have to [pick the topic Id ](https://docs.allora.network/docs/existing-allora-appchain-topics)you wish to generate inference for after which you can run this command with the topic Id. The command will auto-create some files, the most important of which is the `dev-docker-compose.yaml`file which is an already complete docker-compose that you can run immediately to see your worker/reputer and head nodes running perfectly on your local machine. You can edit the files as you wish. for instance the `main.py` is meant for you to call your inference server, hence you will have to edit the sample code with actual URLs and logic as you prefer.
+Before running this command you will have to [pick the topic Id ](https://docs.allora.network/devs/existing-topics) you wish to generate inference for after which you can run this command with the topic Id. The command will auto-create some files, the most important of which is the `dev-docker-compose.yaml`file which is an already complete docker-compose that you can run immediately to see your worker/reputer and head nodes running perfectly on your local machine. You can edit the files as you wish. for instance the `main.py` is meant for you to call your inference server, hence you will have to edit the sample code with actual URLs and logic as you prefer.
 
 When you run the docker-compose (`docker-compose -f dev-docker-compose.yaml up --build`), maybe after you have written and tested your logic in `main.py`, you then should be seeing the logs from the nodes, and you should be able to make a request to your head node and see it get a response from the worker/reputer node. Note that in production, you won't be the one to make the inference request, as the Allora chain will do this at the cadence provided by the topic creator.
 
@@ -62,7 +62,7 @@ curl --location 'http://localhost:6000/api/v1/functions/execute' --header 'Accep
 }' | jq
 ```
 
-The `<TOPIC_ID>` needs to be [an existing topic on the chain](https://docs.allora.network/docs/existing-allora-appchain-topics). The `<argument>` is what the topic is expecting to receive to perform the inference (as an indication to test, you can use the `DefaultArg`  value from the topic on-chain, e.g. for ETH prediction topic, it should be `"ETH"`).
+The `<TOPIC_ID>` needs to be [an existing topic on the chain](https://docs.allora.network/devs/existing-topics). The `<argument>` is what the topic is expecting to receive to perform the inference (as an indication to test, you can use the `DefaultArg`  value from the topic on-chain, e.g. for ETH prediction topic, it should be `"ETH"`).
 
 ### Initialize the worker/reputer for production
 
