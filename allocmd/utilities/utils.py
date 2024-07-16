@@ -23,6 +23,14 @@ def create_worker_account(worker_name, faucet_url, type, network="edgenet"):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
+    else:
+        print(colored("Found allora-chain. Pulling latest changes...", "green"))
+        subprocess.run(
+            ['git', '-C', allora_chain_dir, 'pull', 'origin', 'main'], 
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
     
     make_path = shutil.which('make')
     if make_path:
