@@ -14,7 +14,7 @@ services:
       - --private-key=/data/{{ b7s_type }}/key/priv.bin
       - --log-level=debug
       - --port=9011
-      - --topic={{ topic_id }}
+      - --topic={{ allora_topic_id }}
       - --boot-nodes=/ip4/172.19.0.100/tcp/9010/p2p/{{ head_peer_id }}
     volumes:
       - type: bind

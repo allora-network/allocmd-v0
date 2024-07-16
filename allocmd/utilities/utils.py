@@ -176,6 +176,8 @@ def generateWorkerAccount(worker_name, type):
         with open(config_path, 'w') as file:
             yaml.safe_dump(config, file)
 
+    return address
+
 def generateProdCompose(env: Environment, type):
     """Deploy resource production kubernetes cluster"""
 
@@ -201,10 +203,12 @@ def generateProdCompose(env: Environment, type):
             return
 
         worker_name = config['name']
+        faucet_url = config['faucet_url']
         hex_coded_pk = config[type]['hex_coded_pk']
         boot_nodes = config[type]['boot_nodes']
         chain_rpc_address = config[type]['chain_rpc_address']
         chain_topic_id = config[type]['chain_topic_id']
+        account_address = config[type]['address']
 
 
         alloraTopic = None
@@ -221,7 +225,8 @@ def generateProdCompose(env: Environment, type):
                     "worker_name": worker_name, 
                     "boot_nodes": boot_nodes, 
                     "chain_rpc_address": chain_rpc_address, 
-                    "topic_id": alloraTopic, 
+                    "allora_topic_id": alloraTopic, 
+                    "topic_id": chain_topic_id, 
                 }
             },
             {
@@ -235,13 +240,15 @@ def generateProdCompose(env: Environment, type):
         ]
 
         generate_all_files(env, file_configs, Command.DEPLOY, type)
+
+        fundAddress(faucet_url, account_address)
         cprint(f"production docker compose file generated to be deployed", 'green')
         cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
     else:
         cprint("\nOperation cancelled.", 'red')
 
 
-def blocklessNode(environment, env, type, name=None, topic=None):
+def blocklessNode(environment, env, type, name=None, topic=None, network='edgenet'):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
     if not check_docker_running():
@@ -286,7 +293,7 @@ def blocklessNode(environment, env, type, name=None, topic=None):
                 {
                     "template_name": "dev-docker-compose.yaml.j2",
                     "file_name": "dev-docker-compose.yaml",
-                    "context": {"head_peer_id": head_peer_id, "topic_id": alloraTopic, "b7s_type": type}
+                    "context": {"head_peer_id": head_peer_id, "allora_topic_id": alloraTopic, "b7s_type": type}
                 },
                 {
                     "template_name": "requirements.txt.j2",
@@ -312,7 +319,11 @@ def blocklessNode(environment, env, type, name=None, topic=None):
 
             generate_all_files(env, file_configs, Command.INIT, type, name)
 
-            generateWorkerAccount(name, type)
+            address = generateWorkerAccount(name, type)
+
+            faucet_url = f'https://faucet.{network}.allora.network/'
+
+            fundAddress(faucet_url, address)
         else:
             cprint("\nOperation cancelled.", 'red')
     elif environment == 'prod':
