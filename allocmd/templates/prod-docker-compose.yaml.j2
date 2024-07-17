@@ -27,6 +27,8 @@ services:
       - --allora-chain-home-dir=/data/.allorad
       - --allora-chain-key-name={{ worker_name }}
       - --allora-chain-topic-id={{ topic_id }}
+      - --dialback-address={{ node_ip }}
+      - --dialback-port=9010 
     volumes:
       - type: bind
         source: ./data
@@ -34,6 +36,7 @@ services:
     env_file:
       - .env
     ports:
-      - "9010:9010"
+      - "9010:9010" # expose p2p port
+      - "2112:2112" # expose metrics port
     depends_on:
       - init_{{ worker_name }}

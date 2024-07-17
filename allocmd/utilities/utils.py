@@ -189,6 +189,15 @@ def generateWorkerAccount(worker_name, type):
 
     return address
 
+def get_public_ip():
+    try:
+        result = subprocess.run(['curl', '-4', '-s', 'http://icanhazip.com'], capture_output=True, text=True, check=True)
+        public_ip = result.stdout.strip()
+        return public_ip
+    except subprocess.CalledProcessError as e:
+        click.echo(f"error getting public IP: {e}", err=True)
+        return None
+
 def generateProdCompose(env: Environment, type, network):
     """Deploy resource production kubernetes cluster"""
 
@@ -221,6 +230,7 @@ def generateProdCompose(env: Environment, type, network):
         chain_topic_id = config[type]['topic_id']
         account_address = config[type]['address']
 
+        node_ip = get_public_ip()
 
         alloraTopic = None
         if type == 'worker':
@@ -238,6 +248,7 @@ def generateProdCompose(env: Environment, type, network):
                     "allora_rpc_address": allora_rpc_address, 
                     "allora_topic_id": alloraTopic, 
                     "topic_id": chain_topic_id, 
+                    "node_ip": node_ip
                 }
             },
             {
@@ -247,6 +258,11 @@ def generateProdCompose(env: Environment, type, network):
                     "worker_name": worker_name, 
                     "hex_coded_pk": hex_coded_pk
                 }
+            },
+            {
+                "template_name": "update-node-ip.sh.j2",
+                "file_name": "update-node-ip.sh",
+                "context": {}
             }
         ]
 
@@ -255,6 +271,7 @@ def generateProdCompose(env: Environment, type, network):
         fundAddress(faucet_url, account_address, network)
         cprint(f"production docker compose file generated to be deployed", 'green')
         cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
+        cprint(f"also run chmod +x ./update-node-ip.sh to make update-node-ip.sh execuatable", 'yellow')
     else:
         cprint("\nOperation cancelled.", 'red')
 
@@ -304,6 +321,8 @@ def blocklessNode(environment, env, type, chain_network, name=None, topic=None):
 
             head_peer_id = run_key_generate_command(name, type)
 
+            node_ip = get_public_ip()
+
             file_configs = [
                 {
                     "template_name": "Dockerfile.j2",
@@ -338,7 +357,7 @@ def blocklessNode(environment, env, type, chain_network, name=None, topic=None):
                 {
                     "template_name": "config.yaml.j2",
                     "file_name": "config.yaml",
-                    "context": {"name": name, "topic_id": topic, "b7s_type": type, "network": chain_network, "faucet_url": faucet_url, "allora_heads": allora_heads, "allora_rpc_address": allora_rpc_address, "allora_api_address": allora_api_address}
+                    "context": {"name": name, "topic_id": topic, "b7s_type": type, "network": chain_network, "faucet_url": faucet_url, "allora_heads": allora_heads, "allora_rpc_address": allora_rpc_address, "allora_api_address": allora_api_address, "node_ip": node_ip}
                 }
             ]
 
