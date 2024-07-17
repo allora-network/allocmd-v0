@@ -24,21 +24,23 @@ def generate():
 
 @generate.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
+@click.option('--network', required=True, type=click.Choice(['allora-testnet-1', 'edgenet']), help='The chain network to generate for')
 @click.option('--name', required=False, help='Name of the worker.')
 @click.option('--topic', required=False, type=int, help='The topic ID the worker is registered with.')
-def worker(environment, name=None, topic=None):
+def worker(environment, network, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
-    blocklessNode(environment, env, BlocklessNodeType.worker.name, name, topic)
+    blocklessNode(environment, env, BlocklessNodeType.worker.name, network, name, topic)
 
 @generate.command()
 @click.option('--env', 'environment', required=True, type=click.Choice(['dev', 'prod']), help='Environment to generate for')
+@click.option('--network', required=True, type=click.Choice(['allora-testnet-1', 'edgenet']), help='The chain network to generate for')
 @click.option('--name', required=False, help='Name of the reputer.')
 @click.option('--topic', required=False, type=int, help='The topic ID the reputer is registered with.')
-def reputer(environment, name=None, topic=None):
+def reputer(environment, network, name=None, topic=None):
     """Initialize your Allora Reputer Node with necessary boilerplates"""
 
-    blocklessNode(environment, env, BlocklessNodeType.reputer.name, name, topic)
+    blocklessNode(environment, env, BlocklessNodeType.reputer.name, network, name, topic)
 
 
 @generate.command()

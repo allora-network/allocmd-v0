@@ -1,11 +1,13 @@
 # place all {{ b7s_type }} configuration variables here
 
 name: {{ name }}
-faucet_url: https://faucet.edgenet.allora.network/
+network: {{ network }}
+faucet_url: {{ faucet_url }}
 {{ b7s_type }}:
-  boot_nodes: /dns4/head-0-p2p.edgenet.allora.network/tcp/32050/p2p/12D3KooWQgcJ4wiHBWE6H9FxZAVUn84ZAmywQdRk83op2EibWTiZ
-  chain_rpc_address: https://allora-rpc.edgenet.allora.network/
-  chain_topic_id: {{ topic_id }}
+  allora_heads: {{ allora_heads }}
+  allora_rpc_address: {{ allora_rpc_address }}
+  allora_api_address: {{ allora_api_address }}
+  topic_id: {{ topic_id }}
   mnemonic: ""
   hex_coded_pk: ""
   address: ""

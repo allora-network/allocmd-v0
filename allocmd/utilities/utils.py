@@ -85,7 +85,18 @@ def create_worker_account(worker_name, faucet_url, type, network="edgenet"):
         print(colored("'make' is not available in the system's PATH. Please install it or check your PATH settings.", "red"))
         return ''
 
-def fundAddress(faucet_url, address, network="edgenet"):
+def fetch_content_with_curl(url):
+    try:
+        result = subprocess.run(['curl', '-s', url], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        if result.returncode == 0:
+            return result.stdout
+        else:
+            click.echo(f"Unable to fetch content: {result.stderr}", err=True)
+    except Exception as e:
+        click.echo(f"Error fetching content: {e}", err=True)
+
+def fundAddress(faucet_url, address, network):
     try:
         subprocess.run([
                         'curl',
@@ -178,7 +189,7 @@ def generateWorkerAccount(worker_name, type):
 
     return address
 
-def generateProdCompose(env: Environment, type):
+def generateProdCompose(env: Environment, type, network):
     """Deploy resource production kubernetes cluster"""
 
     cprint(f"\nMake sure you are running this command in the appropriate directory [validator, reputer, worker]", 'cyan')
@@ -205,9 +216,9 @@ def generateProdCompose(env: Environment, type):
         worker_name = config['name']
         faucet_url = config['faucet_url']
         hex_coded_pk = config[type]['hex_coded_pk']
-        boot_nodes = config[type]['boot_nodes']
-        chain_rpc_address = config[type]['chain_rpc_address']
-        chain_topic_id = config[type]['chain_topic_id']
+        boot_nodes = config[type]['allora_heads'] # concatenate the created head nodes to this as well
+        allora_rpc_address = config[type]['allora_rpc_address']
+        chain_topic_id = config[type]['topic_id']
         account_address = config[type]['address']
 
 
@@ -224,7 +235,7 @@ def generateProdCompose(env: Environment, type):
                 "context": {
                     "worker_name": worker_name, 
                     "boot_nodes": boot_nodes, 
-                    "chain_rpc_address": chain_rpc_address, 
+                    "allora_rpc_address": allora_rpc_address, 
                     "allora_topic_id": alloraTopic, 
                     "topic_id": chain_topic_id, 
                 }
@@ -241,19 +252,33 @@ def generateProdCompose(env: Environment, type):
 
         generate_all_files(env, file_configs, Command.DEPLOY, type)
 
-        fundAddress(faucet_url, account_address)
+        fundAddress(faucet_url, account_address, network)
         cprint(f"production docker compose file generated to be deployed", 'green')
         cprint(f"please run chmod -R +rx ./data/scripts to grant script access to the image", 'yellow')
     else:
         cprint("\nOperation cancelled.", 'red')
 
 
-def blocklessNode(environment, env, type, name=None, topic=None, network='edgenet'):
+def blocklessNode(environment, env, type, chain_network, name=None, topic=None):
     """Initialize your Allora Worker Node with necessary boilerplates"""
 
     if not check_docker_running():
         cprint("Docker is not running on your machine, please start docker before running this command", 'red')
         return
+
+    heads_url = f"https://raw.githubusercontent.com/allora-network/networks/main/{chain_network}/heads.txt"
+    allora_heads = fetch_content_with_curl(heads_url)
+
+    if chain_network == 'allora-testnet-1':
+        faucet_url = 'https://faucet.testnet-1.testnet.allora.network/'
+        network = 'testnet-1'
+        allora_rpc_address = "https://allora-rpc.testnet-1.testnet.allora.network/"
+        allora_api_address = "https://allora-api.testnet-1.testnet.allora.network/"
+    elif chain_network == 'edgenet':
+        faucet_url = 'https://faucet.edgenet.allora.network/'
+        network = 'edgenet'
+        allora_rpc_address = "https://allora-rpc.testnet-1.testnet.allora.network/"
+        allora_api_address = "https://allora-api.edgenet.allora.network/"
     
     if environment == 'dev':
         if topic is None:
@@ -313,7 +338,7 @@ def blocklessNode(environment, env, type, name=None, topic=None, network='edgene
                 {
                     "template_name": "config.yaml.j2",
                     "file_name": "config.yaml",
-                    "context": {"name": name, "topic_id": topic, "b7s_type": type}
+                    "context": {"name": name, "topic_id": topic, "b7s_type": type, "network": chain_network, "faucet_url": faucet_url, "allora_heads": allora_heads, "allora_rpc_address": allora_rpc_address, "allora_api_address": allora_api_address}
                 }
             ]
 
@@ -321,17 +346,15 @@ def blocklessNode(environment, env, type, name=None, topic=None, network='edgene
 
             address = generateWorkerAccount(name, type)
 
-            faucet_url = f'https://faucet.{network}.allora.network/'
-
-            fundAddress(faucet_url, address)
+            fundAddress(faucet_url, address, network)
         else:
             cprint("\nOperation cancelled.", 'red')
     elif environment == 'prod':
         devComposePath = os.path.join(os.getcwd(), 'dev-docker-compose.yaml')
         if not os.path.exists(devComposePath):
-            cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> and then run the prod generate in the directory created", 'red')
+            cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> --network <{chain_network}> and then run the prod generate in the directory created", 'red')
         else:
-            generateProdCompose(env, type)
+            generateProdCompose(env, type, network)
 
 
 
