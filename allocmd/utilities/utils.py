@@ -365,7 +365,7 @@ def blocklessNode(environment, env, type, chain_network, name=None, topic=None):
 
             address = generateWorkerAccount(name, type)
 
-            fundAddress(faucet_url, address, network)
+            fundAddress(faucet_url, address, chain_network)
         else:
             cprint("\nOperation cancelled.", 'red')
     elif environment == 'prod':
@@ -373,7 +373,7 @@ def blocklessNode(environment, env, type, chain_network, name=None, topic=None):
         if not os.path.exists(devComposePath):
             cprint(f"You must initialize the {type} on dev please run allocmd generate {type} --env dev --name <{type} name> --topic <topic id> --network <{chain_network}> and then run the prod generate in the directory created", 'red')
         else:
-            generateProdCompose(env, type, network)
+            generateProdCompose(env, type, chain_network)
 
 
 
