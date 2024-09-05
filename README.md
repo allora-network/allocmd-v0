@@ -1,3 +1,24 @@
+# Deprecation Notice
+
+🚨 **This repository is deprecated and no longer maintained.** 🚨
+
+This project is no longer actively developed or maintained. We recommend using [allora-offchain-node](https://github.com/allora-network/allora-offchain-node) as a replacement.
+
+## Why is this project deprecated?
+
+The architecture has been improved and simplified, and heads and workers supported by this project are are not compatible. 
+
+
+## What should you do?
+
+- **Switch to allora-offchain-node**: [allora-offchain-node](https://github.com/allora-network/allora-offchain-node)
+- **Read the Docs**: Refer to docs on architecture (and workers specifically) on [Allora Network Docs](https://docs.allora.network/).
+
+
+Thank you to everyone who contributed to this project.
+
+
+
 # Building a Worker Node with the allocmd CLI
 ![Docker!](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)
 ![Python!](https://img.shields.io/badge/Python-FFD43B?style=for-the-badge&logo=python&logoColor=blue)
